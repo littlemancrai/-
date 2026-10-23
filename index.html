@@ -1,0 +1,2765 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>littleMusic — Telegram Mini App</title>
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* =====================================================================
+       ЕДИНАЯ СИСТЕМА ТЕМ (УПРАВЛЯЕТСЯ ТОЛЬКО ПОЛЬЗОВАТЕЛЕМ, НЕ ВКЛАДКАМИ)
+       ===================================================================== */
+    html[data-theme="dark"] {
+      --bg-primary: #0b0c10;
+      --bg-secondary: #14151b;
+      --bg-tertiary: #1c1e26;
+      --bg-elevated: rgba(24, 26, 34, 0.92);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border-subtle: rgba(255, 255, 255, 0.07);
+      --accent-primary: #3b66ff;
+      --accent-glow: rgba(59, 102, 255, 0.35);
+      --pill-active-bg: #ffffff;
+      --pill-active-text: #090a0f;
+      --card-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.55);
+      /* Неоморфизм для плеера (Тёмный режим — Фото 2) */
+      --neu-surface: linear-gradient(145deg, #24262c 0%, #18191e 100%);
+      --neu-well-bg: #18191e;
+      --neu-well-shadow: inset 6px 6px 14px #101115, inset -6px -6px 14px #262830, 0 12px 28px rgba(0,0,0,0.55);
+      --neu-wheel-bg: linear-gradient(145deg, #26282f, #181a1f);
+      --neu-wheel-shadow: 12px 12px 28px #0f1014, -10px -10px 24px #2c2e36, inset 1px 1px 2px rgba(255,255,255,0.07);
+      --neu-center-bg: linear-gradient(145deg, #16171b, #22242a);
+      --neu-center-shadow: inset 5px 5px 10px #101114, inset -4px -4px 10px #2a2c34;
+      --neu-btn-shadow: 6px 6px 13px #111216, -5px -5px 12px #2b2d35, inset 1px 1px 1px rgba(255,255,255,0.06);
+      --neu-btn-active: inset 4px 4px 8px #111216, inset -4px -4px 8px #2b2d35;
+    }
+
+    html[data-theme="light"] {
+      --bg-primary: #e8effd;
+      --bg-secondary: rgba(255, 255, 255, 0.92);
+      --bg-tertiary: #dbe6fc;
+      --bg-elevated: rgba(255, 255, 255, 0.95);
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --border-subtle: rgba(30, 58, 138, 0.09);
+      --accent-primary: #2b59ff;
+      --accent-glow: rgba(43, 89, 255, 0.25);
+      --pill-active-bg: #2b59ff;
+      --pill-active-text: #ffffff;
+      --card-shadow: 0 12px 28px -8px rgba(43, 89, 255, 0.12), 0 2px 6px rgba(15, 23, 42, 0.04);
+      /* Неоморфизм для плеера (Светлый режим — Фото 1) */
+      --neu-surface: linear-gradient(165deg, #e8effd 0%, #f5f8ff 100%);
+      --neu-well-bg: #eef3fe;
+      --neu-well-shadow: inset 6px 6px 14px #c8d5ee, inset -6px -6px 14px #ffffff, 0 12px 26px rgba(43, 89, 255, 0.12);
+      --neu-wheel-bg: linear-gradient(145deg, #f6f9ff, #dce6fa);
+      --neu-wheel-shadow: 12px 12px 26px #c4d1eb, -10px -10px 24px #ffffff, inset 1px 1px 2px rgba(255,255,255,0.9);
+      --neu-center-bg: linear-gradient(145deg, #d8e3f8, #f5f8ff);
+      --neu-center-shadow: inset 5px 5px 10px #c3d0ea, inset -4px -4px 10px #ffffff;
+      --neu-btn-shadow: 6px 6px 13px #c6d3ec, -5px -5px 12px #ffffff;
+      --neu-btn-active: inset 4px 4px 8px #c6d3ec, inset -4px -4px 8px #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      font-family: var(--font-main);
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      transition: background-color 0.28s ease, color 0.28s ease;
+    }
+
+    .app-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--card-shadow);
+      backdrop-filter: blur(16px);
+      transition: background 0.25s ease, border-color 0.25s ease, transform 0.18s ease;
+    }
+
+    .app-input {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .app-input:focus-within, .app-input:focus {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+      outline: none;
+    }
+
+    .text-main { color: var(--text-primary); }
+    .text-sub { color: var(--text-secondary); }
+    .text-mute { color: var(--text-muted); }
+
+    /* НЕОМОРФНЫЙ ПЛЕЕР И КОЛЕСО (Фото 2 + Фото 1) */
+    .neumorph-surface {
+      background: var(--neu-surface);
+      color: var(--text-primary);
+    }
+    .neumorph-cover-well {
+      background: var(--neu-well-bg);
+      box-shadow: var(--neu-well-shadow);
+    }
+    .neumorph-wheel {
+      width: 212px;
+      height: 212px;
+      border-radius: 9999px;
+      background: var(--neu-wheel-bg);
+      box-shadow: var(--neu-wheel-shadow);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .neumorph-wheel-center {
+      width: 74px;
+      height: 74px;
+      border-radius: 9999px;
+      background: var(--neu-center-bg);
+      box-shadow: var(--neu-center-shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+    .neumorph-wheel-center:active {
+      transform: scale(0.94);
+    }
+    .wheel-btn {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .wheel-btn:hover {
+      color: var(--text-primary);
+    }
+    .wheel-btn:active {
+      transform: scale(0.9);
+      color: var(--accent-primary);
+    }
+    .neumorph-circle-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 9999px;
+      background: var(--neu-wheel-bg);
+      box-shadow: var(--neu-btn-shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      transition: all 0.18s ease;
+    }
+    .neumorph-circle-btn:active, .neumorph-circle-btn.active {
+      box-shadow: var(--neu-btn-active);
+      color: var(--accent-primary);
+    }
+    .neumorph-track-active {
+      background: var(--neu-wheel-bg);
+      box-shadow: var(--neu-btn-shadow);
+      border-radius: 16px;
+    }
+
+    /* ЭСТЕТИЧНАЯ ЖИВАЯ «МОЯ ВОЛНА» (ОРГАНИЧЕСКАЯ СФЕРА) */
+    @keyframes waveOrbitSlow {
+      0% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(180deg) scale(1.08); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+    @keyframes waveOrbitReverse {
+      0% { transform: rotate(360deg) scale(1.04); }
+      50% { transform: rotate(180deg) scale(0.95); }
+      100% { transform: rotate(0deg) scale(1.04); }
+    }
+    .wave-aura-1 {
+      animation: waveOrbitSlow 11s linear infinite;
+    }
+    .wave-aura-2 {
+      animation: waveOrbitReverse 8s linear infinite;
+    }
+    .wave-playing .wave-aura-1 {
+      animation-duration: 4.5s;
+    }
+    .wave-playing .wave-aura-2 {
+      animation-duration: 3.4s;
+    }
+
+    /* Скрытие скроллбаров */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    @keyframes eqPulse {
+      0%, 100% { transform: scaleY(0.3); }
+      50% { transform: scaleY(1); }
+    }
+    .eq-bar {
+      animation: eqPulse 0.75s ease-in-out infinite;
+      transform-origin: bottom;
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-44 select-none">
+
+  <!-- ВСПЛЫВАЮЩИЕ УВЕДОМЛЕНИЯ (TOASTS) -->
+  <div id="toastContainer" class="fixed top-3 left-1/2 -translate-x-1/2 z-[120] pointer-events-none flex flex-col items-center gap-2 w-[92%] max-w-md"></div>
+
+  <!-- СКРЫТЫЙ INPUT ДЛЯ ЗАГРУЗКИ СВОЕЙ ФОТКИ АВАТАРА -->
+  <input id="avatarFileInput" type="file" accept="image/*" class="hidden" onchange="handleCustomAvatarUpload(event)" />
+
+  <!-- =================================================================== -->
+  <!-- ЕДИНАЯ ВЕРХНЯЯ ШАПКА ПРИЛОЖЕНИЯ (С АВАТАРОМ КЛОУНА И ПЕРЕКЛЮЧАТЕЛЕМ ТЕМЫ) -->
+  <!-- =================================================================== -->
+  <header class="sticky top-0 z-30 backdrop-blur-xl bg-opacity-80 px-4 pt-3.5 pb-2.5 border-b" style="background-color: var(--bg-elevated); border-color: var(--border-subtle);">
+    <div class="max-w-md mx-auto flex items-center justify-between gap-2">
+      <!-- Левая часть: Аватар пользователя (по присланному фото) + Имя и статус Админа -->
+      <div class="flex items-center gap-3 min-w-0">
+        <div
+          onclick="document.getElementById('avatarFileInput').click()"
+          title="Нажми, чтобы загрузить свою фотографию с устройства"
+          class="relative w-11 h-11 rounded-full overflow-hidden ring-2 ring-blue-500/70 shadow-lg cursor-pointer shrink-0 group"
+        >
+          <!-- Изображение если пользователь выбрал фото с телефона -->
+          <img id="customUserAvatarImg" src="" alt="Avatar" class="hidden w-full h-full object-cover" />
+          <!-- Дефолтный портрет один-в-один по присланному фото (парень с клоунским гримом: синий и розовый ромбы) -->
+          <svg id="clownSvgAvatar" viewBox="0 0 120 120" class="w-full h-full bg-[#d6cfc7]">
+            <!-- Фон комнаты -->
+            <rect width="120" height="120" fill="#cfc7be" />
+            <!-- Белая рубашка с сине-зелёными мазками краски на воротнике -->
+            <path d="M12 120 C16 92, 38 86, 60 86 C82 86, 104 92, 108 120 Z" fill="#f5f2eb" />
+            <path d="M36 88 L52 115 L40 120 L28 96 Z" fill="#f9f7f2" stroke="#ded8ce" stroke-width="1" />
+            <path d="M84 88 L68 115 L80 120 L92 96 Z" fill="#f9f7f2" stroke="#ded8ce" stroke-width="1" />
+            <!-- Сине-зеленые мазки краски на воротнике как на фото -->
+            <path d="M41 102 L48 116 L43 119 L37 106 Z" fill="#1e68b8" opacity="0.85" />
+            <path d="M44 108 L49 117 L46 119 Z" fill="#38a169" opacity="0.8" />
+            <!-- Шея -->
+            <rect x="46" y="72" width="28" height="22" rx="8" fill="#d9b49a" />
+            <!-- Лицо с белым гримом -->
+            <path d="M33 44 C33 24, 87 24, 87 44 C88 68, 76 86, 60 88 C44 86, 32 68, 33 44 Z" fill="#f4f4f6" stroke="#e2e2e7" stroke-width="1" />
+            <!-- Синий ромб на левом глазу (слева для зрителя) -->
+            <polygon points="46,35 53,50 46,66 39,50" fill="#2b6cb0" opacity="0.9" />
+            <!-- Розово-красный ромб на правом глазу (справа для зрителя) -->
+            <polygon points="74,35 81,50 74,66 67,50" fill="#e53e6b" opacity="0.9" />
+            <!-- Чёрные густые брови -->
+            <path d="M37 44 Q46 39 54 44" fill="none" stroke="#18181b" stroke-width="3.6" stroke-linecap="round" />
+            <path d="M66 44 Q74 39 83 44" fill="none" stroke="#18181b" stroke-width="3.6" stroke-linecap="round" />
+            <!-- Глаза -->
+            <ellipse cx="46" cy="50" rx="4.5" ry="2.4" fill="#ffffff" />
+            <circle cx="46" cy="50" r="2" fill="#3b4d5e" />
+            <ellipse cx="74" cy="50" rx="4.5" ry="2.4" fill="#ffffff" />
+            <circle cx="74" cy="50" r="2" fill="#3b4d5e" />
+            <!-- Розово-красный клоунский нос -->
+            <ellipse cx="60" cy="60" rx="6.5" ry="5.5" fill="#e13d63" />
+            <circle cx="58" cy="58.5" r="1.8" fill="#ff8da6" opacity="0.65" />
+            <!-- Ярко-красные губы с улыбкой -->
+            <path d="M48 72 Q60 69 72 72 Q60 80 48 72 Z" fill="#d91b2b" />
+            <path d="M49 72 Q60 74 71 72" fill="none" stroke="#8c0d18" stroke-width="0.9" />
+            <!-- Тёмные растрёпанные вьющиеся волосы -->
+            <path d="M27 46 C22 25, 38 11, 60 12 C84 11, 98 25, 92 46 C90 34, 82 28, 74 31 C68 24, 58 26, 53 34 C46 25, 34 30, 27 46 Z" fill="#1e1918" />
+            <path d="M42 16 C52 8, 72 8, 82 18 C70 15, 55 15, 42 16 Z" fill="#292220" />
+            <path d="M52 24 Q57 34 63 31" fill="none" stroke="#1e1918" stroke-width="2.4" stroke-linecap="round" />
+          </svg>
+          <div class="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[9px] font-bold text-white text-center leading-none transition">
+            Сменить<br/>фото
+          </div>
+        </div>
+
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5">
+            <span class="font-extrabold text-sm tracking-tight text-main truncate">littleMusic</span>
+            <span id="headerAdminBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30">
+              👑 ADMIN
+            </span>
+          </div>
+          <div class="text-[11px] text-sub truncate flex items-center gap-1">
+            <span id="headerUserIdLabel">ID: 1320156672</span>
+            <span>•</span>
+            <button onclick="openPlayerModal('player')" class="text-blue-500 font-semibold hover:underline">Плеер ↗</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Правая часть: Переключатель глобальной темы (Тёмная / Светлая) -->
+      <div class="flex items-center gap-2 shrink-0">
+        <button
+          id="globalThemeBtn"
+          onclick="toggleGlobalTheme()"
+          class="px-3 py-2 rounded-2xl app-card flex items-center gap-1.5 text-xs font-bold text-main hover:scale-105 active:scale-95 transition"
+          title="Переключить тему всего приложения"
+        >
+          <span id="globalThemeIcon">🌙</span>
+          <span id="globalThemeText">Тёмная</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- =================================================================== -->
+  <!-- ВКЛАДКА 1: 🌊 ВОЛНА (ЭСТЕТИЧНАЯ ЖИВАЯ МОЯ ВОЛНА + БЕСКОНЕЧНЫЙ ПОТОК) -->
+  <!-- =================================================================== -->
+  <main id="tab-home" class="px-4 pt-4 pb-44 max-w-md mx-auto space-y-6">
+
+    <!-- ГЛАВНАЯ ОРГАНИЧЕСКАЯ СФЕРА «МОЯ ВОЛНА» (КРАСИВАЯ АНИМАЦИЯ КАК В ЯНДЕКС МУЗЫКЕ / SPOTIFY AI) -->
+    <section id="waveHeroBox" class="app-card rounded-[32px] p-5 relative overflow-hidden">
+      <!-- Многослойное живое свечение на фоне -->
+      <div id="waveAuraBg1" class="wave-aura-1 absolute -top-16 -right-16 w-60 h-60 rounded-full bg-gradient-to-br from-blue-600/35 via-indigo-500/25 to-cyan-400/20 blur-3xl pointer-events-none"></div>
+      <div id="waveAuraBg2" class="wave-aura-2 absolute -bottom-20 -left-16 w-60 h-60 rounded-full bg-gradient-to-tr from-fuchsia-600/25 via-blue-500/20 to-emerald-400/15 blur-3xl pointer-events-none"></div>
+
+      <div class="relative z-10 flex flex-col items-center text-center">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-[11px] font-bold text-blue-400 mb-3">
+          <span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
+          <span id="infiniteWaveStatusText">Бесконечная ИИ-волна • В очереди: 14</span>
+        </div>
+
+        <!-- Живой интерактивный Canvas-пульсар Моей Волны -->
+        <div
+          onclick="togglePlayPause()"
+          class="relative w-44 h-44 flex items-center justify-center cursor-pointer group my-1"
+        >
+          <canvas id="myWaveOrbCanvas" width="220" height="220" class="w-44 h-44"></canvas>
+          <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <div class="w-14 h-14 rounded-full bg-white/95 text-slate-950 shadow-2xl flex items-center justify-center group-hover:scale-110 group-active:scale-95 transition">
+              <svg id="waveOrbPlayIcon" class="w-6 h-6 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+            <span class="text-[11px] font-extrabold uppercase tracking-widest mt-2 text-main drop-shadow">
+              Моя волна
+            </span>
+          </div>
+        </div>
+
+        <h2 id="waveCurrentVibeTitle" class="text-lg font-extrabold text-main tracking-tight mt-1">
+          🌊 Поток по твоим лайкам
+        </h2>
+        <p id="waveCurrentTrackSub" class="text-xs text-sub mt-0.5 max-w-xs truncate">
+          Автодогрузка +6 похожих треков, когда остаётся ≤ 3 в очереди
+        </p>
+
+        <!-- Фильтры настроения Моей Волны -->
+        <div class="flex items-center justify-center flex-wrap gap-2 mt-4">
+          <button onclick="startMyWave('likes')" id="vibeChip-likes" class="vibe-chip px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#3b66ff] text-white shadow-md transition">
+            ❤️ По лайкам
+          </button>
+          <button onclick="startMyWave('energetic')" id="vibeChip-energetic" class="vibe-chip px-3.5 py-1.5 rounded-full text-xs font-semibold app-card text-main hover:border-blue-500 transition">
+            🔥 Бодрый кач
+          </button>
+          <button onclick="startMyWave('chill')" id="vibeChip-chill" class="vibe-chip px-3.5 py-1.5 rounded-full text-xs font-semibold app-card text-main hover:border-blue-500 transition">
+            🌙 Ночной дрифт
+          </button>
+          <button onclick="startMyWave('fresh')" id="vibeChip-fresh" class="vibe-chip px-3.5 py-1.5 rounded-full text-xs font-semibold app-card text-main hover:border-blue-500 transition">
+            🆕 Фреш
+          </button>
+        </div>
+
+        <!-- Индикатор бесконечной автодогрузки волны -->
+        <div class="w-full mt-4 pt-3 border-t flex items-center justify-between text-[11px]" style="border-color: var(--border-subtle);">
+          <span id="waveRemainingCounter" class="text-sub font-medium">До автодогрузки: 10 треков</span>
+          <button
+            onclick="replenishWaveWithSimilar(true)"
+            class="font-bold text-blue-500 hover:underline flex items-center gap-1"
+          >
+            <span>+6 похожих в волну сейчас</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- СЕТКА 2x2: НЕДАВНО СЛУШАЛИ (Из Фото 1) -->
+    <section>
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-extrabold text-main">Недавно в твоём эфире</h3>
+        <button onclick="openPlayerModal('album')" class="text-xs font-semibold text-blue-500 hover:underline">
+          Очередь волны →
+        </button>
+      </div>
+      <div id="recentlyPlayedGrid" class="grid grid-cols-2 gap-2.5"></div>
+    </section>
+
+    <!-- БЫСТРЫЕ КАРТОЧКИ РЕЖИМОВ (3 КОЛОНКИ ИЗ ФОТО 1) -->
+    <section>
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-extrabold text-main">Быстрый старт</h3>
+        <button onclick="switchTab('playlists')" class="text-xs font-semibold text-blue-500 hover:underline">
+          Все режимы →
+        </button>
+      </div>
+      <div id="trendingHorizontal" class="grid grid-cols-3 gap-2.5"></div>
+    </section>
+
+    <!-- ПЯТНИЧНЫЙ ТОП НЕДЕЛИ (Из Фото 1) -->
+    <section>
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <h3 class="text-sm font-extrabold text-main">Топ недели</h3>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400">ПЯТНИЦА • ИИ</span>
+        </div>
+        <button onclick="shuffleWeeklyTop()" class="text-xs font-semibold text-blue-500 hover:underline">
+          🔄 Обновить
+        </button>
+      </div>
+      <div id="songsOfWeekList" class="space-y-2.5"></div>
+    </section>
+
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- ВКЛАДКА 2: ❤️ ЛАЙКИ (ОТДЕЛЬНАЯ ВКЛАДКА ПОНРАВИВШИХСЯ ТРЕКОВ)         -->
+  <!-- =================================================================== -->
+  <main id="tab-likes" class="px-4 pt-4 pb-44 max-w-md mx-auto space-y-5 hidden">
+
+    <div class="app-card rounded-3xl p-5 relative overflow-hidden">
+      <div class="absolute -right-8 -top-8 w-36 h-36 rounded-full bg-rose-500/20 blur-2xl pointer-events-none"></div>
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-400">
+            Личная коллекция
+          </span>
+          <h1 class="text-2xl font-extrabold text-main mt-1">❤️ Понравившиеся</h1>
+          <p id="likesTabCountSubtitle" class="text-xs text-sub mt-0.5">Все твои лайкнутые треки в одном месте</p>
+        </div>
+        <button
+          onclick="startLikedPlaylist(false)"
+          class="w-12 h-12 rounded-2xl bg-rose-500 text-white shadow-lg shadow-rose-500/30 flex items-center justify-center hover:bg-rose-600 active:scale-95 transition shrink-0"
+          title="Включить все лайкнутые"
+        >
+          <svg class="w-6 h-6 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2 mt-4">
+        <button
+          onclick="startLikedPlaylist(false)"
+          class="flex-1 py-2.5 rounded-2xl bg-[#3b66ff] text-white text-xs font-bold hover:bg-blue-600 active:scale-95 transition"
+        >
+          ▶️ Слушать подряд
+        </button>
+        <button
+          onclick="startLikedPlaylist(true)"
+          class="flex-1 py-2.5 rounded-2xl app-input text-main text-xs font-bold hover:border-blue-500 active:scale-95 transition"
+        >
+          🔀 Вперемешку
+        </button>
+      </div>
+    </div>
+
+    <!-- Поиск внутри лайкнутых треков -->
+    <div class="app-input rounded-2xl px-4 py-3 flex items-center gap-3">
+      <svg class="w-4 h-4 text-sub shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="8" />
+        <path stroke-linecap="round" d="M21 21l-4.35-4.35" />
+      </svg>
+      <input
+        id="likesSearchInput"
+        type="text"
+        placeholder="Фильтр по понравившимся трекам..."
+        oninput="renderLikesTab()"
+        class="w-full bg-transparent text-xs text-main placeholder-slate-400 focus:outline-none"
+      />
+    </div>
+
+    <!-- Список лайкнутых треков -->
+    <div id="likesTrackListContainer" class="space-y-2"></div>
+
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- ВКЛАДКА 3: 🔍 ПОИСК МУЗЫКИ (КАК НА ФОТО 3, БЕЗ РЕКЛАМНЫХ БАННЕРОВ)   -->
+  <!-- =================================================================== -->
+  <main id="tab-search" class="px-4 pt-4 pb-44 max-w-md mx-auto space-y-5 hidden">
+
+    <!-- Таблетки режимов поиска -->
+    <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+      <button onclick="setSearchFilter('tracks')" id="sFilter-tracks" class="search-pill px-4 py-2 rounded-full text-xs font-bold bg-[#3b66ff] text-white transition shrink-0">
+        Треки
+      </button>
+      <button onclick="setSearchFilter('web57')" id="sFilter-web57" class="search-pill px-4 py-2 rounded-full text-xs font-semibold app-card text-sub hover:text-main transition shrink-0">
+        🌐 5–7 вариантов из сети
+      </button>
+      <button onclick="setSearchFilter('artist_strict')" id="sFilter-artist_strict" class="search-pill px-4 py-2 rounded-full text-xs font-semibold app-card text-sub hover:text-main transition shrink-0">
+        🎤 Чисто артист
+      </button>
+      <button onclick="setSearchFilter('albums')" id="sFilter-albums" class="search-pill px-4 py-2 rounded-full text-xs font-semibold app-card text-sub hover:text-main transition shrink-0">
+        Альбомы
+      </button>
+    </div>
+
+    <!-- Заголовок Поиск музыки (Без баннеров, чисто как просил) -->
+    <div>
+      <h1 class="text-2xl font-extrabold text-main tracking-tight mb-1">Поиск музыки</h1>
+      <p id="searchModeHint" class="text-xs text-sub">
+        Глобальный поиск по YouTube Music, всему YouTube и SoundCloud
+      </p>
+    </div>
+
+    <!-- Поле поиска -->
+    <div class="app-input rounded-2xl px-4 py-3.5 flex items-center gap-3">
+      <svg class="w-5 h-5 text-sub shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="8" />
+        <path stroke-linecap="round" d="M21 21l-4.35-4.35" />
+      </svg>
+      <input
+        id="searchInput"
+        type="text"
+        placeholder="Название песни, ремикс или исполнитель..."
+        oninput="handleSearchInput(this.value)"
+        class="w-full bg-transparent text-sm text-main placeholder-slate-400 focus:outline-none"
+      />
+      <button
+        id="clearSearchBtn"
+        onclick="clearSearch()"
+        class="hidden text-sub hover:text-main text-xs px-2 py-0.5 rounded-lg app-card"
+      >
+        ✕
+      </button>
+    </div>
+
+    <!-- Быстрые теги проверки -->
+    <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+      <span class="text-[11px] text-mute shrink-0 mr-1">Проверить:</span>
+      <button onclick="quickSearch('FACE')" class="text-[11px] px-3 py-1 rounded-full app-card text-main font-semibold shrink-0">FACE</button>
+      <button onclick="quickSearch('LIZER & FLESH')" class="text-[11px] px-3 py-1 rounded-full app-card text-main font-semibold shrink-0">LIZER & FLESH</button>
+      <button onclick="quickSearch('Miyagi')" class="text-[11px] px-3 py-1 rounded-full app-card text-main font-semibold shrink-0">Miyagi</button>
+      <button onclick="quickSearch('Скриптонит')" class="text-[11px] px-3 py-1 rounded-full app-card text-main font-semibold shrink-0">Скриптонит</button>
+      <button onclick="quickSearch('Billie Eilish')" class="text-[11px] px-3 py-1 rounded-full app-card text-main font-semibold shrink-0">Billie Eilish</button>
+    </div>
+
+    <!-- Живая выдача результатов поиска -->
+    <div id="liveSearchResultsSection" class="hidden space-y-2.5">
+      <div class="flex items-center justify-between">
+        <h3 id="searchResultsTitle" class="text-xs font-extrabold uppercase tracking-wider text-sub">Результаты из интернета</h3>
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400">YTM • YT • SC</span>
+      </div>
+      <div id="searchResultsContainer" class="space-y-2"></div>
+    </div>
+
+    <!-- Блок "Твоя коллекция" как на Фото 3 -->
+    <div class="pt-2">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-extrabold text-main tracking-tight">Твоя коллекция</h2>
+        <span id="collectionCountLabel" class="text-xs text-sub font-semibold">Треков: 0</span>
+      </div>
+      <div id="userCollectionContainer" class="space-y-2"></div>
+    </div>
+
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- ВКЛАДКА 4: 🎤 АРТИСТЫ (ЛЮБИМЫЕ ИСПОЛНИТЕЛИ С ЛАЙКАМИ И СОЛЬНИКАМИ)   -->
+  <!-- =================================================================== -->
+  <main id="tab-artists" class="px-4 pt-4 pb-44 max-w-md mx-auto space-y-5 hidden">
+
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-extrabold text-main tracking-tight">🎤 Исполнители</h1>
+        <p class="text-xs text-sub">Ставь ❤️ любимым артистам и включай чисто их дискографию</p>
+      </div>
+      <span id="likedArtistsCountBadge" class="text-xs font-bold px-3 py-1 rounded-full bg-rose-500/15 text-rose-400">
+        ❤️ 5
+      </span>
+    </div>
+
+    <!-- Фильтр: Все артисты / Только любимые (лайкнутые) + Добавление своего артиста -->
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex items-center gap-1.5">
+        <button
+          id="artFilter-all"
+          onclick="setArtistTabFilter('all')"
+          class="px-4 py-2 rounded-full text-xs font-bold bg-[#3b66ff] text-white transition"
+        >
+          Все артисты
+        </button>
+        <button
+          id="artFilter-liked"
+          onclick="setArtistTabFilter('liked')"
+          class="px-4 py-2 rounded-full text-xs font-semibold app-card text-sub hover:text-main transition"
+        >
+          ❤️ Любимые
+        </button>
+      </div>
+
+      <div class="flex items-center gap-1.5">
+        <input
+          id="newArtistNameInput"
+          type="text"
+          placeholder="+ Имя артиста..."
+          class="w-32 app-input rounded-xl px-3 py-1.5 text-xs"
+        />
+        <button
+          onclick="addCustomArtistToCatalog()"
+          class="px-3 py-1.5 rounded-xl bg-[#3b66ff] text-white text-xs font-bold hover:bg-blue-600 transition"
+        >
+          Добавить
+        </button>
+      </div>
+    </div>
+
+    <!-- Сетка карточек артистов с кнопкой Лайка ❤️ и кнопкой «Слушать чисто его» -->
+    <div id="artistsCatalogGrid" class="grid grid-cols-2 gap-3"></div>
+
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- ВКЛАДКА 5: 🎛 ПЛЕЙЛИСТЫ (ИМПОРТ ЯНДЕКС / SPOTIFY / VK + МИКС АРТИСТОВ) -->
+  <!-- =================================================================== -->
+  <main id="tab-playlists" class="px-4 pt-4 pb-44 max-w-md mx-auto space-y-6 hidden">
+
+    <div>
+      <h1 class="text-2xl font-extrabold text-main tracking-tight">🎛 Плейлисты и Импорт</h1>
+      <p class="text-xs text-sub">Перенос из стримингов с твоим названием и ровный микс артистов</p>
+    </div>
+
+    <!-- 1. ПЕРЕНОС ИЗ ЯНДЕКС МУЗЫКИ, SPOTIFY И VK МУЗЫКИ В ОТДЕЛЬНЫЕ ПОДПИСАННЫЕ ПЛЕЙЛИСТЫ -->
+    <section class="app-card rounded-3xl p-4 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-blue-400">Импорт коллекций</span>
+          <h2 class="text-base font-extrabold text-main">Перенос из Яндекс, Spotify и VK</h2>
+          <p class="text-[11px] text-sub">Создаёт отдельный плейлист с твоим собственным названием</p>
+        </div>
+      </div>
+
+      <!-- Выбор платформы переноса -->
+      <div class="grid grid-cols-3 gap-2">
+        <button
+          id="impSource-yandex"
+          onclick="selectImportPlatform('yandex')"
+          class="p-2.5 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1 transition bg-amber-500/15 border-amber-500 text-amber-400"
+        >
+          <span class="text-base">🟡</span>
+          <span>Яндекс Музыка</span>
+        </button>
+        <button
+          id="impSource-spotify"
+          onclick="selectImportPlatform('spotify')"
+          class="p-2.5 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1 transition app-input text-sub"
+        >
+          <span class="text-base">🟢</span>
+          <span>Spotify</span>
+        </button>
+        <button
+          id="impSource-vk"
+          onclick="selectImportPlatform('vk')"
+          class="p-2.5 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1 transition app-input text-sub"
+        >
+          <span class="text-base">🔵</span>
+          <span>VK Музыка</span>
+        </button>
+      </div>
+
+      <!-- Поля: Своё название плейлиста + Ссылка/Токен/Список -->
+      <div class="space-y-2.5">
+        <div>
+          <label class="text-[11px] font-bold text-sub block mb-1">1. Как подписать этот плейлист?</label>
+          <input
+            id="importCustomTitleInput"
+            type="text"
+            placeholder="Например: Мой Яндекс 2026 / Ночной ВК / Спотик в тачку"
+            class="w-full app-input rounded-xl px-3.5 py-2.5 text-xs"
+          />
+        </div>
+        <div>
+          <label id="importSourceLinkLabel" class="text-[11px] font-bold text-sub block mb-1">
+            2. Ссылка на плейлист, OAuth-токен или список треков (необязательно для быстрого переноса):
+          </label>
+          <input
+            id="importSourceDataInput"
+            type="text"
+            placeholder="Ссылка на плейлист, токен или имена через запятую..."
+            class="w-full app-input rounded-xl px-3.5 py-2.5 text-xs"
+          />
+        </div>
+        <button
+          onclick="createImportedPlaylist()"
+          class="w-full py-3 rounded-2xl bg-[#3b66ff] text-white text-xs font-extrabold shadow-lg shadow-blue-500/25 hover:bg-blue-600 active:scale-98 transition"
+        >
+          📥 Перенести и создать подписанный плейлист
+        </button>
+      </div>
+
+      <!-- Список перенесённых подписанных плейлистов пользователя -->
+      <div class="pt-2">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-extrabold text-main">Мои перенесённые и подписанные плейлисты:</span>
+          <span id="importedPlaylistsCount" class="text-[11px] text-sub font-semibold">3 шт.</span>
+        </div>
+        <div id="importedPlaylistsContainer" class="space-y-2.5"></div>
+      </div>
+    </section>
+
+    <!-- 2. ИСПРАВЛЕННЫЙ КОНСТРУКТОР «🎛 МИКС ИЗ АРТИСТОВ (10–20 ТРЕКОВ)» (БЕЗ РАЗБРОСА, РОВНАЯ СЕТКА) -->
+    <section class="app-card rounded-3xl p-4 space-y-3.5">
+      <div class="flex items-center justify-between">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400">Закрытая очередь 10–20 песен</span>
+          <h2 class="text-base font-extrabold text-main">🎛 Микс строго из выбранных артистов</h2>
+          <p class="text-[11px] text-sub">Равномерное чередование треков только отмеченных исполнителей</p>
+        </div>
+        <span id="mixSelectedCounterBadge" class="text-xs font-bold px-2.5 py-1 rounded-full bg-purple-500/15 text-purple-400 shrink-0">
+          Выбрано: 3
+        </span>
+      </div>
+
+      <!-- Ровная сетка 2 колонки без хаотичного разброса -->
+      <div id="multiArtistSelectorGrid" class="grid grid-cols-2 gap-2"></div>
+
+      <div class="flex gap-2 pt-1">
+        <input
+          id="mixCustomPlaylistName"
+          type="text"
+          placeholder="Подписать микс (необязательно)..."
+          class="flex-1 app-input rounded-xl px-3.5 py-2.5 text-xs"
+        />
+        <button
+          onclick="buildMultiArtistMix()"
+          class="px-4 py-2.5 rounded-xl bg-purple-600 text-white text-xs font-extrabold hover:bg-purple-500 active:scale-95 transition shrink-0"
+        >
+          ▶️ Собрать и включить
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- ВКЛАДКА 6: 🛡 АДМИН-ПАНЕЛЬ (ДОСТУПНА ДЛЯ ID 1320156672 И НАЗНАЧЕННЫХ) -->
+  <!-- =================================================================== -->
+  <main id="tab-admin" class="px-4 pt-4 pb-44 max-w-md mx-auto space-y-5 hidden">
+
+    <!-- Шапка Админки -->
+    <section class="app-card rounded-3xl p-4 border-l-4 border-l-blue-500">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-lg font-extrabold">
+            🛡
+          </div>
+          <div>
+            <h1 class="text-lg font-extrabold text-main leading-tight">Панель владельца бота</h1>
+            <p class="text-[11px] text-sub">Твой главный Telegram ID: <code class="text-blue-400 font-bold">1320156672</code></p>
+          </div>
+        </div>
+        <!-- Переключатель симуляции для проверки как выглядит у обычного юзера vs тебя -->
+        <button
+          onclick="toggleSimulateRegularUser()"
+          id="simUserModeBtn"
+          class="text-[10px] font-bold px-2.5 py-1.5 rounded-xl app-input text-sub hover:text-main transition"
+          title="Проверить отображение глазами обычного пользователя"
+        >
+          👁 Тест: Владелец
+        </button>
+      </div>
+
+      <!-- Сводка базы данных music_bot.db -->
+      <div class="grid grid-cols-4 gap-2 mt-4">
+        <div class="app-input rounded-2xl p-2.5 text-center">
+          <div id="adminStatUsers" class="text-base font-extrabold text-main">7</div>
+          <div class="text-[9px] text-sub">Юзеров</div>
+        </div>
+        <div class="app-input rounded-2xl p-2.5 text-center">
+          <div id="adminStatAdmins" class="text-base font-extrabold text-blue-400">2</div>
+          <div class="text-[9px] text-sub">Админов</div>
+        </div>
+        <div class="app-input rounded-2xl p-2.5 text-center">
+          <div id="adminStatCache" class="text-base font-extrabold text-emerald-400">164</div>
+          <div class="text-[9px] text-sub">Кэш MP3</div>
+        </div>
+        <div class="app-input rounded-2xl p-2.5 text-center">
+          <div id="adminStatWaves" class="text-base font-extrabold text-purple-400">412</div>
+          <div class="text-[9px] text-sub">Волн ИИ</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ВЫДАЧА АДМИНКИ ПО TELEGRAM ID -->
+    <section class="app-card rounded-3xl p-4 space-y-3">
+      <div>
+        <h2 class="text-sm font-extrabold text-main">👑 Выдать права админа по ID</h2>
+        <p class="text-[11px] text-sub">Добавь Telegram ID человека, чтобы у него тоже открылась вкладка «🛡 Админ»</p>
+      </div>
+
+      <div class="flex gap-2">
+        <input
+          id="grantAdminIdInput"
+          type="number"
+          placeholder="Введи Telegram ID (например: 51904412)..."
+          class="flex-1 app-input rounded-xl px-3.5 py-2.5 text-xs"
+        />
+        <button
+          onclick="grantAdminByIdFromInput()"
+          class="px-4 py-2.5 rounded-xl bg-[#3b66ff] text-white text-xs font-extrabold hover:bg-blue-600 active:scale-95 transition shrink-0"
+        >
+          + Выдать админку
+        </button>
+      </div>
+
+      <!-- Список текущих администраторов -->
+      <div>
+        <div class="text-[11px] font-bold text-sub mb-1.5">Действующие администраторы:</div>
+        <div id="activeAdminsChips" class="flex flex-wrap gap-1.5"></div>
+      </div>
+    </section>
+
+    <!-- СПИСОК ВСЕХ ЗАРЕГИСТРИРОВАННЫХ ПОЛЬЗОВАТЕЛЕЙ БОТА -->
+    <section class="app-card rounded-3xl p-4 space-y-3">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-extrabold text-main">👥 Пользователи в базе (music_bot.db)</h2>
+          <p class="text-[11px] text-sub">Можно выдать или забрать админку одной кнопкой</p>
+        </div>
+        <button
+          onclick="addSimulatedUser()"
+          class="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition"
+        >
+          + Симуляция юзера
+        </button>
+      </div>
+
+      <div id="adminUsersList" class="space-y-2 max-h-80 overflow-y-auto no-scrollbar"></div>
+    </section>
+
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- ПОЛНОЭКРАННЫЙ ПЛЕЕР И ЭКРАН АЛЬБОМА (ФОТО 1 + ФОТО 2 + ЖИВАЯ ВОЛНА)   -->
+  <!-- =================================================================== -->
+  <div
+    id="fullPlayerModal"
+    class="fixed inset-0 z-50 neumorph-surface hidden flex-col justify-between overflow-y-auto no-scrollbar transition-all duration-300"
+  >
+    <div class="max-w-md w-full mx-auto px-5 pt-4 pb-8 flex-1 flex flex-col justify-between">
+
+      <!-- ВЕРХНЯЯ ПАНЕЛЬ ПЛЕЕРА -->
+      <div class="flex items-center justify-between mb-2">
+        <button
+          onclick="closePlayerModal()"
+          class="w-9 h-9 rounded-full flex items-center justify-center text-sub hover:text-main active:scale-90 transition"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        <div class="flex items-center p-1 rounded-full border" style="background: var(--bg-tertiary); border-color: var(--border-subtle);">
+          <button
+            id="modalTabBtn-player"
+            onclick="switchModalView('player')"
+            class="px-3.5 py-1 rounded-full text-[11px] font-extrabold tracking-wider uppercase bg-[#3b66ff] text-white shadow transition"
+          >
+            Плеер
+          </button>
+          <button
+            id="modalTabBtn-album"
+            onclick="switchModalView('album')"
+            class="px-3.5 py-1 rounded-full text-[11px] font-extrabold tracking-wider uppercase text-sub hover:text-main transition"
+          >
+            Альбом (<span id="modalQueueCountLabel">14</span>)
+          </button>
+        </div>
+
+        <button
+          onclick="sendCurrentTrackToBotChat()"
+          title="Отправить этот трек в чат бота"
+          class="w-9 h-9 rounded-full flex items-center justify-center text-sub hover:text-main active:scale-90 transition"
+        >
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="5" r="1.8" />
+            <circle cx="12" cy="12" r="1.8" />
+            <circle cx="12" cy="19" r="1.8" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- РЕЖИМ A: ПЛЕЕР С ПЕРИМЕТРАЛЬНЫМ ПРОГРЕССОМ (ФОТО 1), ПЛАВНОЙ ВОЛНОЙ И КОЛЕСОМ (ФОТО 2) -->
+      <div id="modalView-player" class="flex-1 flex flex-col justify-between items-center">
+
+        <!-- Квадратная обложка с контурным прогресс-баром вокруг рамки (из Фото 1) -->
+        <div class="flex flex-col items-center my-1">
+          <div class="relative w-[220px] h-[220px] flex items-center justify-center">
+            <svg class="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 220 220">
+              <rect
+                x="6" y="6" width="208" height="208" rx="44" ry="44"
+                fill="none"
+                stroke="rgba(148, 163, 184, 0.16)"
+                stroke-width="4"
+              />
+              <rect
+                id="perimeterProgressRect"
+                x="6" y="6" width="208" height="208" rx="44" ry="44"
+                fill="none"
+                stroke="#3b66ff"
+                stroke-width="4.5"
+                stroke-linecap="round"
+                stroke-dasharray="760"
+                stroke-dashoffset="480"
+                class="transition-all duration-300"
+              />
+            </svg>
+
+            <div class="neumorph-cover-well w-[188px] h-[188px] rounded-[36px] p-2.5 flex items-center justify-center overflow-hidden">
+              <img
+                id="playerCoverImg"
+                src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80"
+                alt="Cover"
+                class="w-full h-full object-cover rounded-[28px]"
+              />
+            </div>
+          </div>
+
+          <div id="perimeterTimeLabel" class="mt-1.5 text-xs font-extrabold text-sub tracking-wider tabular-nums">
+            00:42
+          </div>
+        </div>
+
+        <!-- Название трека, артист, кнопка лайка -->
+        <div class="w-full flex items-center justify-between px-2">
+          <button
+            id="playerLikeBtn"
+            onclick="toggleLikeCurrentTrack()"
+            class="w-10 h-10 rounded-full flex items-center justify-center text-rose-500 hover:scale-110 active:scale-90 transition"
+          >
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+            </svg>
+          </button>
+
+          <div class="text-center px-2 flex-1 min-w-0">
+            <h2 id="playerTrackTitle" class="text-xl font-extrabold text-main truncate">Юморист</h2>
+            <p id="playerTrackArtist" class="text-xs font-semibold text-sub truncate mt-0.5">FACE • SLIME</p>
+          </div>
+
+          <button
+            onclick="replenishWaveWithSimilar(true)"
+            title="Продлить волну (+6 похожих треков)"
+            class="w-10 h-10 rounded-full flex items-center justify-center text-blue-400 hover:scale-110 active:scale-90 transition font-extrabold text-xs"
+          >
+            +6🌊
+          </button>
+        </div>
+
+        <!-- КРАСИВАЯ ПЛАВНАЯ МНОГОСЛОЙНАЯ АУДИО-ВОЛНА (ВМЕСТО СТРОГИХ ПАЛОК) -->
+        <div class="w-full px-1 my-1.5">
+          <div class="relative w-full h-14 flex items-center">
+            <canvas
+              id="smoothWaveCanvas"
+              width="380"
+              height="56"
+              onclick="handleWaveCanvasScrub(event)"
+              class="w-full h-14 cursor-pointer"
+            ></canvas>
+          </div>
+          <div class="flex items-center justify-between text-[11px] font-semibold text-sub px-1 tabular-nums">
+            <span id="playerCurrentTime">0:42</span>
+            <span id="playerSourceBadge" class="text-[10px] text-blue-400 font-bold">🎵 Бесконечная волна</span>
+            <span id="playerRemainingTime">-1:55</span>
+          </div>
+        </div>
+
+        <!-- КРУГЛОЕ НЕОМОРФНОЕ КОЛЕСО УПРАВЛЕНИЯ ИЗ ФОТО 2 -->
+        <div class="my-1 flex items-center justify-center">
+          <div class="neumorph-wheel">
+            <button onclick="toggleShuffleQueue()" class="wheel-btn top-2.5 left-1/2 -translate-x-1/2" title="Перемешать">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+              </svg>
+            </button>
+
+            <button onclick="prevTrack()" class="wheel-btn left-2.5 top-1/2 -translate-y-1/2" title="Предыдущий">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
+              </svg>
+            </button>
+
+            <div onclick="switchModalView('album')" class="neumorph-wheel-center" title="Открыть альбом и очередь">
+              <span class="text-[10px] font-extrabold uppercase tracking-widest text-sub">ALBUM</span>
+            </div>
+
+            <button onclick="nextTrack()" class="wheel-btn right-2.5 top-1/2 -translate-y-1/2" title="Следующий">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+              </svg>
+            </button>
+
+            <button onclick="togglePlayPause()" class="wheel-btn bottom-2.5 left-1/2 -translate-x-1/2 text-main" title="Play / Pause">
+              <div class="flex items-center gap-1">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+                <svg class="w-4 h-4 opacity-80" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                </svg>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Далее в очереди (Next up из Фото 1) -->
+        <div class="w-full mt-1">
+          <div class="flex items-center justify-between text-xs mb-1 px-1">
+            <span class="font-bold text-sub">Далее в волне</span>
+            <button onclick="switchModalView('album')" class="text-blue-400 font-semibold hover:underline">
+              Вся очередь →
+            </button>
+          </div>
+          <div
+            id="nextUpCard"
+            onclick="nextTrack()"
+            class="app-card rounded-2xl p-2.5 flex items-center justify-between cursor-pointer"
+          ></div>
+        </div>
+
+      </div>
+
+      <!-- РЕЖИМ B: ЭКРАН АЛЬБОМА И БЕСКОНЕЧНОЙ ОЧЕРЕДИ (ТОЧНО КАК НА ФОТО 2 СПРАВА) -->
+      <div id="modalView-album" class="hidden flex-1 flex-col justify-between">
+        <div>
+          <div class="text-center mb-3">
+            <p id="albumHeaderTitle" class="text-[11px] font-extrabold uppercase tracking-widest text-sub">
+              FACE • SLIME
+            </p>
+          </div>
+
+          <div class="flex items-center justify-center gap-6 my-3">
+            <button id="albumLikeCircleBtn" onclick="toggleLikeCurrentTrack()" class="neumorph-circle-btn" title="Лайк">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+            </button>
+
+            <div class="neumorph-cover-well w-32 h-32 rounded-[28px] p-2 flex items-center justify-center">
+              <img id="albumViewCoverImg" src="" alt="Album" class="w-full h-full object-cover rounded-[22px]" />
+            </div>
+
+            <button onclick="sendCurrentTrackToBotChat()" class="neumorph-circle-btn" title="Скачать MP3 в чат бота">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3" />
+              </svg>
+            </button>
+          </div>
+
+          <div id="albumTracklistContainer" class="mt-4 space-y-1.5 max-h-[340px] overflow-y-auto no-scrollbar pr-1"></div>
+        </div>
+
+        <div
+          onclick="switchModalView('player')"
+          class="mt-4 neumorph-track-active p-3 flex items-center justify-between cursor-pointer"
+        >
+          <div class="flex items-center gap-3 min-w-0">
+            <img id="albumMiniCover" src="" class="w-10 h-10 rounded-xl object-cover shrink-0" />
+            <div class="min-w-0">
+              <div id="albumMiniTitle" class="text-xs font-bold text-main truncate">Юморист</div>
+              <div id="albumMiniArtist" class="text-[11px] text-sub truncate">FACE</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 shrink-0 pr-1">
+            <button onclick="event.stopPropagation(); toggleLikeCurrentTrack()" class="text-rose-500 font-bold">♥</button>
+            <button onclick="event.stopPropagation(); togglePlayPause()" class="text-main font-bold text-sm">
+              <span id="albumMiniPlayIcon">⏸</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- ПЛАВАЮЩИЙ МИНИ-ПЛЕЕР + НИЖНЯЯ НАВИГАЦИЯ (6 ВКЛАДОК ВКЛЮЧАЯ ЛАЙКИ, АРТИСТОВ И АДМИНКУ) -->
+  <!-- =================================================================== -->
+  <div class="fixed bottom-0 left-0 right-0 z-40 px-2.5 pb-2.5 pt-1 pointer-events-none">
+    <div class="max-w-md mx-auto flex flex-col gap-2 pointer-events-auto">
+
+      <!-- Плавающий мини-плеер -->
+      <div
+        onclick="openPlayerModal('player')"
+        class="app-card rounded-2xl p-2.5 flex items-center justify-between cursor-pointer shadow-2xl"
+      >
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="relative w-10 h-10 rounded-xl overflow-hidden shrink-0">
+            <img id="miniPlayerCover" src="" alt="Cover" class="w-full h-full object-cover" />
+            <div id="miniEqOverlay" class="hidden absolute inset-0 bg-black/50 items-end justify-center gap-0.5 pb-1.5">
+              <span class="w-1 h-3 bg-blue-400 rounded-full eq-bar"></span>
+              <span class="w-1 h-4 bg-white rounded-full eq-bar" style="animation-delay: 0.2s"></span>
+              <span class="w-1 h-2.5 bg-blue-400 rounded-full eq-bar" style="animation-delay: 0.4s"></span>
+            </div>
+          </div>
+          <div class="min-w-0">
+            <div id="miniPlayerTitle" class="text-xs font-extrabold text-main truncate">Юморист</div>
+            <div id="miniPlayerArtist" class="text-[11px] text-sub truncate">FACE • 0:42 / 2:37</div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1 shrink-0">
+          <button
+            onclick="event.stopPropagation(); toggleLikeCurrentTrack()"
+            id="miniLikeBtn"
+            class="w-8 h-8 rounded-full flex items-center justify-center text-rose-500 text-sm"
+          >
+            ♥
+          </button>
+          <button
+            onclick="event.stopPropagation(); togglePlayPause()"
+            class="w-9 h-9 rounded-full bg-[#3b66ff] text-white flex items-center justify-center hover:scale-105 active:scale-95 transition shadow"
+          >
+            <svg id="miniPlaySvg" class="w-4 h-4 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </button>
+          <button
+            onclick="event.stopPropagation(); nextTrack()"
+            class="w-8 h-8 rounded-full flex items-center justify-center text-sub hover:text-main transition"
+          >
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- НИЖНИЙ ДОК НАВИГАЦИИ С КАПСУЛОЙ АКТИВНОЙ ВКЛАДКИ (АДАПТИРУЕТСЯ ПОД АДМИНА) -->
+      <nav id="bottomNavDock" class="app-card rounded-[28px] p-1 grid grid-cols-6 gap-0.5 shadow-2xl">
+        <button id="navBtn-home" onclick="switchTab('home')" class="nav-pill flex flex-col items-center justify-center py-2 px-1 rounded-[22px] transition-all">
+          <span class="text-sm leading-none mb-0.5">🌊</span>
+          <span class="text-[10px] leading-tight">Волна</span>
+        </button>
+
+        <button id="navBtn-likes" onclick="switchTab('likes')" class="nav-pill flex flex-col items-center justify-center py-2 px-1 rounded-[22px] transition-all">
+          <span class="text-sm leading-none mb-0.5">❤️</span>
+          <span class="text-[10px] leading-tight">Лайки</span>
+        </button>
+
+        <button id="navBtn-search" onclick="switchTab('search')" class="nav-pill flex flex-col items-center justify-center py-2 px-1 rounded-[22px] transition-all">
+          <span class="text-sm leading-none mb-0.5">🔍</span>
+          <span class="text-[10px] leading-tight">Поиск</span>
+        </button>
+
+        <button id="navBtn-artists" onclick="switchTab('artists')" class="nav-pill flex flex-col items-center justify-center py-2 px-1 rounded-[22px] transition-all">
+          <span class="text-sm leading-none mb-0.5">🎤</span>
+          <span class="text-[10px] leading-tight">Артисты</span>
+        </button>
+
+        <button id="navBtn-playlists" onclick="switchTab('playlists')" class="nav-pill flex flex-col items-center justify-center py-2 px-1 rounded-[22px] transition-all">
+          <span class="text-sm leading-none mb-0.5">🎛</span>
+          <span class="text-[10px] leading-tight">Миксы</span>
+        </button>
+
+        <button id="navBtn-admin" onclick="switchTab('admin')" class="nav-pill flex flex-col items-center justify-center py-2 px-1 rounded-[22px] transition-all">
+          <span class="text-sm leading-none mb-0.5">🛡</span>
+          <span class="text-[10px] leading-tight">Админ</span>
+        </button>
+      </nav>
+
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- JAVASCRIPT: ПОЛНАЯ ЛОГИКА ВСЕХ 9 ПУНКТОВ                            -->
+  <!-- =================================================================== -->
+  <script>
+    const OWNER_ADMIN_ID = 1320156672;
+    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    // 1. БАЗА ИСПОЛНИТЕЛЕЙ (ДЛЯ ВКЛАДКИ «🎤 АРТИСТЫ» И КОНСТРУКТОРА МИКСОВ)
+    let ARTISTS_CATALOG = [
+      { id: "art_face", name: "FACE", genre: "Хип-хоп / Альтернатива", liked: true, cover: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&auto=format&fit=crop&q=80" },
+      { id: "art_lizer", name: "LIZER & FLESH", genre: "Кибер-рэп / Клауд", liked: true, cover: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=80" },
+      { id: "art_miyagi", name: "Miyagi & Эндшпиль", genre: "Регги / Хип-хоп", liked: true, cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&auto=format&fit=crop&q=80" },
+      { id: "art_skryp", name: "Скриптонит", genre: "Рэп / Инди-грув", liked: true, cover: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=400&auto=format&fit=crop&q=80" },
+      { id: "art_billie", name: "Billie Eilish", genre: "Дарк-поп / Инди", liked: true, cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80" },
+      { id: "art_weeknd", name: "The Weeknd", genre: "Синтвейв / R&B", liked: false, cover: "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=400&auto=format&fit=crop&q=80" },
+      { id: "art_9mice", name: "9mice", genre: "Rage / Opium", liked: false, cover: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&auto=format&fit=crop&q=80" },
+      { id: "art_villian", name: "VILLIAN, madk1d", genre: "Саундклауд-волна", liked: false, cover: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=400&auto=format&fit=crop&q=80" }
+    ];
+
+    // 2. БАЗА ТРЕКОВ
+    let TRACK_DATABASE = [
+      { id: "face_humorist", artist: "FACE", title: "Юморист", album: "SLIME", duration: 157, source: "🎵 YTM", growth: "+28%", vibe: "energetic", liked: true, freq: 220, cover: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80" },
+      { id: "face_kalashnikov", artist: "FACE", title: "Мой Калашников", album: "SLIME", duration: 192, source: "🎵 YTM", growth: "+21%", vibe: "energetic", liked: true, freq: 246, cover: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500&auto=format&fit=crop&q=80" },
+      { id: "face_rayman", artist: "FACE", title: "Рэйман", album: "Искренний", duration: 171, source: "▶️ YT", growth: "+19%", vibe: "energetic", liked: false, freq: 261, cover: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&auto=format&fit=crop&q=80" },
+      { id: "face_labyrinth", artist: "FACE", title: "Лабиринт", album: "12", duration: 184, source: "☁️ SC", growth: "NEW", vibe: "chill", liked: true, freq: 196, cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80" },
+      { id: "lizer_false_mirror", artist: "LIZER & FLESH", title: "FALSE MIRROR (Prod. by Taz Taylor)", album: "ЗАКАТ 99.1", duration: 214, source: "🎵 YTM", growth: "+24%", vibe: "chill", liked: true, freq: 233, cover: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=80" },
+      { id: "lizer_pack", artist: "LIZER & FLESH", title: "Пачка сигарет", album: "My Soul", duration: 196, source: "🎵 YTM", growth: "+18%", vibe: "chill", liked: false, freq: 210, cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80" },
+      { id: "miyagi_silhouette", artist: "Miyagi & Эндшпиль", title: "Силуэт", album: "NARRATIVE", duration: 218, source: "🎵 YTM", growth: "+22%", vibe: "chill", liked: true, freq: 220, cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=80" },
+      { id: "miyagi_minor", artist: "Miyagi & Эндшпиль", title: "Minor", album: "YAMAKASI", duration: 175, source: "🎵 YTM", growth: "+19%", vibe: "chill", liked: true, freq: 196, cover: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=500&auto=format&fit=crop&q=80" },
+      { id: "skryptonite_polozhenie", artist: "Скриптонит", title: "Положение", album: "Уроборос", duration: 262, source: "🎵 YTM", growth: "+18%", vibe: "chill", liked: true, freq: 164, cover: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=500&auto=format&fit=crop&q=80" },
+      { id: "skryptonite_moskva", artist: "Скриптонит", title: "Москва любит...", album: "2004", duration: 208, source: "🎵 YTM", growth: "+16%", vibe: "energetic", liked: false, freq: 185, cover: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&auto=format&fit=crop&q=80" },
+      { id: "billie_lovely", artist: "Billie Eilish", title: "lovely (with Khalid)", album: "WHEN WE ALL FALL ASLEEP", duration: 200, source: "🎵 YTM", growth: "+20%", vibe: "chill", liked: true, freq: 174, cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80" },
+      { id: "weeknd_adaptation", artist: "The Weeknd", title: "Adaptation", album: "Kiss Land", duration: 283, source: "🎵 YTM", growth: "+15%", vibe: "chill", liked: true, freq: 207, cover: "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=500&auto=format&fit=crop&q=80" },
+      { id: "villian_dinastiya", artist: "VILLIAN, madk1d", title: "ДИНАСТИЯ", album: "HYPER WAVE", duration: 150, source: "☁️ SC", growth: "NEW", vibe: "fresh", liked: false, freq: 277, cover: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=500&auto=format&fit=crop&q=80" },
+      { id: "9mice_kino", artist: "9mice", title: "KINO", album: "ASPHALT", duration: 109, source: "☁️ SC", growth: "+31%", vibe: "fresh", liked: false, freq: 293, cover: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=500&auto=format&fit=crop&q=80" }
+    ];
+
+    // Пул похожих треков для автоматической бесконечной догрузки волны (+6 штук, когда остаётся <= 3)
+    const WAVE_SIMILAR_POOL = [
+      { artist: "FACE", title: "Бургер (Remastered)", album: "Hate Love", duration: 142, source: "🎵 YTM", vibe: "energetic", freq: 240, cover: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80" },
+      { artist: "Скриптонит", title: "Это любовь", album: "Дом с нормальными явлениями", duration: 254, source: "🎵 YTM", vibe: "chill", freq: 180, cover: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=500&auto=format&fit=crop&q=80" },
+      { artist: "Miyagi & Эндшпиль", title: "Captain", album: "Hajime Pt. 3", duration: 212, source: "🎵 YTM", vibe: "energetic", freq: 215, cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=80" },
+      { artist: "LIZER", title: "Корабли", album: "Youth", duration: 188, source: "🎵 YTM", vibe: "chill", freq: 205, cover: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=80" },
+      { artist: "FACE, glamangel", title: "юморист (hardtekk remix)", album: "SoundCloud", duration: 99, source: "☁️ SC", vibe: "energetic", freq: 290, cover: "https://images.unsplash.com/photo-1563089145-599997674d42?w=500&auto=format&fit=crop&q=80" },
+      { artist: "The Weeknd", title: "After Hours", album: "After Hours", duration: 241, source: "🎵 YTM", vibe: "chill", freq: 195, cover: "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=500&auto=format&fit=crop&q=80" },
+      { artist: "Billie Eilish", title: "CHIHIRO", album: "HIT ME HARD AND SOFT", duration: 230, source: "🎵 YTM", vibe: "fresh", freq: 188, cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80" },
+      { artist: "madk1d", title: "ночной рейс (sped up)", album: "SC Wave", duration: 128, source: "☁️ SC", vibe: "fresh", freq: 270, cover: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=500&auto=format&fit=crop&q=80" }
+    ];
+
+    // 3. СОСТОЯНИЕ ПРИЛОЖЕНИЯ
+    let state = {
+      theme: localStorage.getItem('lm_global_theme') || 'dark',
+      currentTab: 'home',
+      currentUserId: (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id)
+        ? Number(tg.initDataUnsafe.user.id)
+        : OWNER_ADMIN_ID,
+      adminIds: JSON.parse(localStorage.getItem('lm_admin_ids') || JSON.stringify([OWNER_ADMIN_ID, 51904412])),
+      queue: [...TRACK_DATABASE],
+      currentIndex: 0,
+      isPlaying: false,
+      currentTime: 42,
+      isInfiniteWave: true,
+      currentVibe: 'likes',
+      searchFilter: 'tracks',
+      artistTabFilter: 'all',
+      selectedImportPlatform: 'yandex',
+      selectedMixArtists: new Set(['FACE', 'LIZER & FLESH', 'Miyagi & Эндшпиль']),
+      importedPlaylists: [
+        {
+          id: "imp_ya_1",
+          platform: "yandex",
+          badge: "🟡 Яндекс Музыка",
+          title: "Мой Яндекс: Любимое 2026",
+          tracks: [TRACK_DATABASE[0], TRACK_DATABASE[4], TRACK_DATABASE[6], TRACK_DATABASE[8], TRACK_DATABASE[1]]
+        },
+        {
+          id: "imp_sp_1",
+          platform: "spotify",
+          badge: "🟢 Spotify",
+          title: "Spotify: Night Drive & Chill",
+          tracks: [TRACK_DATABASE[10], TRACK_DATABASE[11], TRACK_DATABASE[3], TRACK_DATABASE[7]]
+        },
+        {
+          id: "imp_vk_1",
+          platform: "vk",
+          badge: "🔵 VK Музыка",
+          title: "ВК: Старый добрый плейлист",
+          tracks: [TRACK_DATABASE[2], TRACK_DATABASE[5], TRACK_DATABASE[9], TRACK_DATABASE[12]]
+        }
+      ],
+      registeredUsers: [
+        { id: 1320156672, username: "@littleMusic_owner", joined: "Владелец бота", likes: 86, online: true },
+        { id: 51904412, username: "@lagoda1337", joined: "22 окт, 21:44", likes: 32, online: true },
+        { id: 33491820, username: "@yep_music", joined: "22 окт, 18:15", likes: 19, online: false },
+        { id: 90124511, username: "@night_drifter", joined: "21 окт, 14:02", likes: 64, online: true },
+        { id: 44812095, username: "@katya_vibe", joined: "21 окт, 09:30", likes: 27, online: false },
+        { id: 77231904, username: "@phonk_walker", joined: "20 окт, 23:51", likes: 15, online: true }
+      ]
+    };
+
+    // =====================================================================
+    // 1. ГЛОБАЛЬНАЯ ТЕМА (СВЕТЛАЯ ИЛИ ТЁМНАЯ ТОЛЬКО ПО ВЫБОРУ ЮЗЕРА)
+    // =====================================================================
+
+    function applyGlobalTheme(themeName) {
+      state.theme = themeName;
+      document.documentElement.setAttribute('data-theme', themeName);
+      localStorage.setItem('lm_global_theme', themeName);
+
+      const iconEl = document.getElementById('globalThemeIcon');
+      const textEl = document.getElementById('globalThemeText');
+      if (themeName === 'light') {
+        iconEl.textContent = '☀️';
+        textEl.textContent = 'Светлая';
+      } else {
+        iconEl.textContent = '🌙';
+        textEl.textContent = 'Тёмная';
+      }
+      updateNavButtonsHighlight();
+    }
+
+    function toggleGlobalTheme() {
+      const next = state.theme === 'dark' ? 'light' : 'dark';
+      applyGlobalTheme(next);
+      showToast(
+        next === 'light' ? 'Включён светлый режим во всём приложении' : 'Включён тёмный режим во всём приложении',
+        next === 'light' ? '☀️' : '🌙'
+      );
+    }
+
+    // =====================================================================
+    // 2. ЗАГРУЗКА СВОЕЙ ФОТОГРАФИИ НА АВАТАРКУ
+    // =====================================================================
+
+    function loadSavedCustomAvatar() {
+      const saved = localStorage.getItem('lm_custom_avatar_data');
+      if (saved) {
+        const img = document.getElementById('customUserAvatarImg');
+        const svg = document.getElementById('clownSvgAvatar');
+        img.src = saved;
+        img.classList.remove('hidden');
+        svg.classList.add('hidden');
+      }
+    }
+
+    function handleCustomAvatarUpload(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const dataUrl = e.target.result;
+        try {
+          localStorage.setItem('lm_custom_avatar_data', dataUrl);
+        } catch (err) {}
+        const img = document.getElementById('customUserAvatarImg');
+        const svg = document.getElementById('clownSvgAvatar');
+        img.src = dataUrl;
+        img.classList.remove('hidden');
+        svg.classList.add('hidden');
+        showToast('Твоя фотография установлена на аватар!', '📸');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // =====================================================================
+    // 3. ПРОВЕРКА ПРАВ АДМИНА (ID 1320156672 + ВЫДАННЫЕ ID)
+    // =====================================================================
+
+    function isUserAdmin(uid) {
+      return Number(uid) === OWNER_ADMIN_ID || state.adminIds.includes(Number(uid));
+    }
+
+    function syncAdminAccessUI() {
+      const adminAllowed = isUserAdmin(state.currentUserId);
+      const adminNavBtn = document.getElementById('navBtn-admin');
+      const dock = document.getElementById('bottomNavDock');
+      const badge = document.getElementById('headerAdminBadge');
+      const idLabel = document.getElementById('headerUserIdLabel');
+
+      idLabel.textContent = `ID: ${state.currentUserId}`;
+
+      if (adminAllowed) {
+        adminNavBtn.classList.remove('hidden');
+        dock.className = "app-card rounded-[28px] p-1 grid grid-cols-6 gap-0.5 shadow-2xl";
+        badge.classList.remove('hidden');
+        badge.textContent = state.currentUserId === OWNER_ADMIN_ID ? '👑 OWNER' : '🛡 ADMIN';
+      } else {
+        adminNavBtn.classList.add('hidden');
+        dock.className = "app-card rounded-[28px] p-1 grid grid-cols-5 gap-1 shadow-2xl";
+        badge.classList.add('hidden');
+        if (state.currentTab === 'admin') {
+          switchTab('home');
+        }
+      }
+    }
+
+    function toggleSimulateRegularUser() {
+      const btn = document.getElementById('simUserModeBtn');
+      if (state.currentUserId === OWNER_ADMIN_ID) {
+        state.currentUserId = 999888777;
+        btn.textContent = "👁 Режим: Гость (Вернуть 1320156672)";
+        showToast("Тест: вход от обычного ID (вкладка Админ скрыта)", "👁");
+      } else {
+        state.currentUserId = OWNER_ADMIN_ID;
+        btn.textContent = "👁 Тест: Владелец (1320156672)";
+        showToast("Вы вошли под своим ID 1320156672 — полные права Админа!", "👑");
+      }
+      syncAdminAccessUI();
+      renderAdminPanel();
+    }
+
+    function grantAdminByIdFromInput() {
+      const inp = document.getElementById('grantAdminIdInput');
+      const rawId = Number(inp.value.trim());
+      if (!rawId || rawId < 1000) {
+        showToast("Введи корректный числовой Telegram ID!", "⚠️");
+        return;
+      }
+      if (!state.adminIds.includes(rawId)) {
+        state.adminIds.push(rawId);
+        localStorage.setItem('lm_admin_ids', JSON.stringify(state.adminIds));
+      }
+      // Если этого юзера ещё нет в списке зарегистрированных — добавим
+      if (!state.registeredUsers.some(u => u.id === rawId)) {
+        state.registeredUsers.unshift({
+          id: rawId,
+          username: `@user_${String(rawId).slice(-4)}`,
+          joined: "Добавлен админом",
+          likes: 0,
+          online: true
+        });
+      }
+      inp.value = '';
+      renderAdminPanel();
+      syncAdminAccessUI();
+      showToast(`Пользователю ID ${rawId} выдана Админ-панель!`, "👑");
+    }
+
+    function toggleUserAdminRole(targetId) {
+      targetId = Number(targetId);
+      if (targetId === OWNER_ADMIN_ID) {
+        showToast("ID 1320156672 — главный создатель, права не снимаются!", "👑");
+        return;
+      }
+      const idx = state.adminIds.indexOf(targetId);
+      if (idx === -1) {
+        state.adminIds.push(targetId);
+        showToast(`Выдана админ-панель для ID ${targetId}`, "👑");
+      } else {
+        state.adminIds.splice(idx, 1);
+        showToast(`Отозвана админ-панель у ID ${targetId}`, "🔒");
+      }
+      localStorage.setItem('lm_admin_ids', JSON.stringify(state.adminIds));
+      renderAdminPanel();
+      syncAdminAccessUI();
+    }
+
+    function renderAdminPanel() {
+      document.getElementById('adminStatUsers').textContent = state.registeredUsers.length;
+      document.getElementById('adminStatAdmins').textContent = state.adminIds.length;
+
+      // Чипы текущих админов
+      const chipsBox = document.getElementById('activeAdminsChips');
+      chipsBox.innerHTML = state.adminIds.map(aid => {
+        const isOwner = aid === OWNER_ADMIN_ID;
+        return `
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+            isOwner ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40' : 'app-input text-main'
+          }">
+            <span>${isOwner ? '👑' : '🛡'} ${aid}</span>
+            ${!isOwner ? `<button onclick="toggleUserAdminRole(${aid})" class="text-rose-400 hover:text-rose-300 ml-1">✕</button>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      // Таблица всех пользователей
+      const listEl = document.getElementById('adminUsersList');
+      listEl.innerHTML = state.registeredUsers.map(u => {
+        const hasAdmin = isUserAdmin(u.id);
+        const isOwner = u.id === OWNER_ADMIN_ID;
+        return `
+          <div class="app-input rounded-2xl p-3 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full ${u.online ? 'bg-emerald-400' : 'bg-slate-500'}"></span>
+                <span class="text-xs font-extrabold text-main truncate">${u.username}</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  isOwner ? 'bg-amber-500/20 text-amber-400' : hasAdmin ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-500/15 text-sub'
+                }">
+                  ${isOwner ? 'Владелец' : hasAdmin ? 'Админ' : 'Юзер'}
+                </span>
+              </div>
+              <div class="text-[11px] text-sub mt-0.5">
+                ID: <code class="font-bold text-main">${u.id}</code> • ${u.joined} • ❤️ ${u.likes}
+              </div>
+            </div>
+            ${
+              isOwner
+                ? `<span class="text-[10px] font-bold text-amber-400 shrink-0 px-2">Главный ID</span>`
+                : `<button
+                     onclick="toggleUserAdminRole(${u.id})"
+                     class="px-3 py-1.5 rounded-xl text-[11px] font-bold transition shrink-0 ${
+                       hasAdmin
+                         ? 'bg-rose-500/15 text-rose-400 hover:bg-rose-500/25'
+                         : 'bg-[#3b66ff] text-white hover:bg-blue-600'
+                     }"
+                   >
+                     ${hasAdmin ? 'Снять админку' : 'Дать админку'}
+                   </button>`
+            }
+          </div>
+        `;
+      }).join('');
+    }
+
+    function addSimulatedUser() {
+      const randomId = Math.floor(100000000 + Math.random() * 899999999);
+      const handles = ["@meloman_tg", "@bass_dealer", "@tokyo_drift", "@vibe_hunter", "@cloud_rap"];
+      const picked = handles[Math.floor(Math.random() * handles.length)];
+      state.registeredUsers.push({
+        id: randomId,
+        username: picked,
+        joined: "Только что",
+        likes: 3,
+        online: true
+      });
+      renderAdminPanel();
+      showToast(`Пользователь ${picked} (${randomId}) зарегистрирован!`, "👥");
+    }
+
+    // =====================================================================
+    // 4. БЕСКОНЕЧНАЯ ВОЛНА (АВТОДОГРУЗКА +6 ПОХОЖИХ ТРЕКОВ ПРИ ОСТАТКЕ <= 3)
+    // =====================================================================
+
+    function checkAndReplenishInfiniteWave() {
+      if (!state.isInfiniteWave) return;
+      const remaining = state.queue.length - 1 - state.currentIndex;
+      if (remaining <= 3) {
+        replenishWaveWithSimilar(false);
+      }
+      updateWaveCountersUI();
+    }
+
+    function replenishWaveWithSimilar(manualTrigger = false) {
+      const addedTracks = [];
+      const shuffledPool = [...WAVE_SIMILAR_POOL, ...TRACK_DATABASE].sort(() => Math.random() - 0.5);
+
+      for (let i = 0; i < 6; i++) {
+        const template = shuffledPool[i % shuffledPool.length];
+        const copy = {
+          ...template,
+          id: `${template.id || 'wave'}_${Date.now()}_${i}`,
+          liked: Boolean(template.liked)
+        };
+        state.queue.push(copy);
+        addedTracks.push(copy);
+      }
+
+      updateWaveCountersUI();
+      updateAllPlayerUI();
+      showToast(
+        manualTrigger
+          ? `🌊 В волну добавлено ещё 6 похожих треков! (Всего: ${state.queue.length})`
+          : `🌊 Оставалось ≤ 3 треков: ИИ автоматически подгрузил +6 похожих!`,
+        "✨"
+      );
+    }
+
+    function updateWaveCountersUI() {
+      const remaining = Math.max(0, state.queue.length - 1 - state.currentIndex);
+      const statusText = document.getElementById('infiniteWaveStatusText');
+      const remCounter = document.getElementById('waveRemainingCounter');
+      const modalCount = document.getElementById('modalQueueCountLabel');
+
+      if (statusText) {
+        statusText.textContent = state.isInfiniteWave
+          ? `Бесконечная ИИ-волна • В очереди: ${state.queue.length}`
+          : `Закрытый плейлист • Треков: ${state.queue.length}`;
+      }
+      if (remCounter) {
+        remCounter.textContent = state.isInfiniteWave
+          ? `Впереди: ${remaining} тр. (при ≤ 3 добавятся ещё +6)`
+          : `Режим плейлиста • Осталось: ${remaining} тр.`;
+      }
+      if (modalCount) {
+        modalCount.textContent = state.queue.length;
+      }
+    }
+
+    // =====================================================================
+    // 5. АНИМАЦИЯ ЖИВОЙ СФЕРЫ «МОЯ ВОЛНА» И ПЛАВНОЙ ЗВУКОВОЙ ВОЛНЫ В ПЛЕЕРЕ
+    // =====================================================================
+
+    let wavePhase = 0;
+    function animateVisualizersLoop() {
+      wavePhase += state.isPlaying ? 0.065 : 0.018;
+
+      // А. Отрисовка центральной сферы «Моя волна» на Главной
+      const orbCanvas = document.getElementById('myWaveOrbCanvas');
+      if (orbCanvas) {
+        const ctx = orbCanvas.getContext('2d');
+        const w = orbCanvas.width;
+        const h = orbCanvas.height;
+        const cx = w / 2;
+        const cy = h / 2;
+        ctx.clearRect(0, 0, w, h);
+
+        const paletteMap = {
+          likes: ['rgba(59, 102, 255, 0.45)', 'rgba(236, 72, 153, 0.35)', 'rgba(56, 189, 248, 0.35)'],
+          energetic: ['rgba(249, 115, 22, 0.5)', 'rgba(239, 68, 68, 0.4)', 'rgba(168, 85, 247, 0.35)'],
+          chill: ['rgba(99, 102, 241, 0.48)', 'rgba(14, 165, 233, 0.38)', 'rgba(139, 92, 246, 0.35)'],
+          fresh: ['rgba(16, 185, 129, 0.48)', 'rgba(59, 130, 246, 0.4)', 'rgba(6, 182, 212, 0.35)']
+        };
+        const colors = paletteMap[state.currentVibe] || paletteMap.likes;
+
+        for (let layer = 0; layer < 3; layer++) {
+          ctx.beginPath();
+          const baseRadius = 56 + layer * 13;
+          const amp = (state.isPlaying ? 8 : 3) + layer * 2;
+          for (let angle = 0; angle <= Math.PI * 2; angle += 0.08) {
+            const offset =
+              Math.sin(angle * (3 + layer) + wavePhase * (layer % 2 === 0 ? 1 : -1.2)) * amp +
+              Math.cos(angle * 2 - wavePhase) * (amp * 0.5);
+            const r = baseRadius + offset;
+            const x = cx + Math.cos(angle) * r;
+            const y = cy + Math.sin(angle) * r;
+            if (angle === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.closePath();
+          ctx.fillStyle = colors[layer];
+          ctx.fill();
+        }
+      }
+
+      // Б. Отрисовка плавной многослойной волны в полноэкранном плеере
+      const smoothCanvas = document.getElementById('smoothWaveCanvas');
+      if (smoothCanvas) {
+        const sctx = smoothCanvas.getContext('2d');
+        const sw = smoothCanvas.width;
+        const sh = smoothCanvas.height;
+        const midY = sh / 2;
+        sctx.clearRect(0, 0, sw, sh);
+
+        const track = state.queue[state.currentIndex] || TRACK_DATABASE[0];
+        const ratio = Math.min(1, state.currentTime / (track.duration || 180));
+        const progressX = sw * ratio;
+
+        // Фоновая плавная волна (непроигранная часть)
+        drawSmoothAudioRibbon(sctx, sw, midY, wavePhase, 'rgba(148, 163, 184, 0.28)', 'rgba(148, 163, 184, 0.12)');
+
+        // Активная светящаяся часть волны до текущего времени трека
+        sctx.save();
+        sctx.beginPath();
+        sctx.rect(0, 0, progressX, sh);
+        sctx.clip();
+        drawSmoothAudioRibbon(sctx, sw, midY, wavePhase, '#3b66ff', 'rgba(236, 72, 153, 0.55)');
+        sctx.restore();
+
+        // Светящийся бегунок прогресса
+        sctx.beginPath();
+        sctx.arc(progressX, midY, 4.5, 0, Math.PI * 2);
+        sctx.fillStyle = '#ffffff';
+        sctx.shadowColor = '#3b66ff';
+        sctx.shadowBlur = 10;
+        sctx.fill();
+        sctx.shadowBlur = 0;
+      }
+
+      requestAnimationFrame(animateVisualizersLoop);
+    }
+
+    function drawSmoothAudioRibbon(ctx, width, midY, phase, primaryColor, secondaryColor) {
+      const ampMultiplier = state.isPlaying ? 1 : 0.45;
+      // Вторая полупрозрачная гармоническая волна
+      ctx.beginPath();
+      for (let x = 0; x <= width; x += 3) {
+        const env = Math.sin((x / width) * Math.PI);
+        const y = midY + Math.sin(x * 0.045 - phase * 1.1) * Math.cos(x * 0.02 + phase * 0.5) * 20 * env * ampMultiplier;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = secondaryColor;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Основная огибающая звуковая волна с мягким заполнением
+      ctx.beginPath();
+      ctx.moveTo(0, midY);
+      for (let x = 0; x <= width; x += 2) {
+        const env = Math.sin((x / width) * Math.PI);
+        const wave =
+          Math.sin(x * 0.06 + phase) * 14 * env * ampMultiplier +
+          Math.sin(x * 0.13 - phase * 0.7) * 7 * env * ampMultiplier;
+        ctx.lineTo(x, midY - Math.abs(wave));
+      }
+      for (let x = width; x >= 0; x -= 2) {
+        const env = Math.sin((x / width) * Math.PI);
+        const wave =
+          Math.sin(x * 0.06 + phase) * 14 * env * ampMultiplier +
+          Math.sin(x * 0.13 - phase * 0.7) * 7 * env * ampMultiplier;
+        ctx.lineTo(x, midY + Math.abs(wave));
+      }
+      ctx.closePath();
+      ctx.fillStyle = primaryColor;
+      ctx.fill();
+    }
+
+    function handleWaveCanvasScrub(e) {
+      const canvas = document.getElementById('smoothWaveCanvas');
+      const rect = canvas.getBoundingClientRect();
+      const clickX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+      const ratio = clickX / rect.width;
+      const track = state.queue[state.currentIndex] || TRACK_DATABASE[0];
+      state.currentTime = Math.floor((track.duration || 180) * ratio);
+      updateAllPlayerUI();
+    }
+
+    // =====================================================================
+    // 6. ОТДЕЛЬНАЯ ВКЛАДКА «❤️ ЛАЙКИ» И ОТДЕЛЬНАЯ ВКЛАДКА «🎤 АРТИСТЫ»
+    // =====================================================================
+
+    function renderLikesTab() {
+      const filterQ = (document.getElementById('likesSearchInput')?.value || '').trim().toLowerCase();
+      const allLiked = TRACK_DATABASE.filter(t => t.liked);
+      const filtered = filterQ
+        ? allLiked.filter(t => t.title.toLowerCase().includes(filterQ) || t.artist.toLowerCase().includes(filterQ))
+        : allLiked;
+
+      document.getElementById('likesTabCountSubtitle').textContent =
+        `Сохранено любимых треков: ${allLiked.length}`;
+
+      const box = document.getElementById('likesTrackListContainer');
+      if (filtered.length === 0) {
+        box.innerHTML = `
+          <div class="app-card rounded-3xl p-8 text-center">
+            <div class="text-2xl mb-2">💔</div>
+            <div class="text-xs font-bold text-main">Список понравившихся треков пуст</div>
+            <p class="text-[11px] text-sub mt-1">Нажимай на сердечко ❤️ рядом с любой песней в поиске или волне</p>
+          </div>
+        `;
+        return;
+      }
+
+      box.innerHTML = filtered.map((tr, i) => `
+        <div
+          onclick="playTrackById('${tr.id}')"
+          class="app-card rounded-2xl p-2.5 flex items-center justify-between gap-3 cursor-pointer hover:scale-[1.01] transition"
+        >
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="text-xs font-bold text-sub w-4 text-center">${i + 1}</span>
+            <img src="${tr.cover}" class="w-11 h-11 rounded-xl object-cover shrink-0" />
+            <div class="min-w-0">
+              <div class="text-xs font-extrabold text-main truncate">${tr.title}</div>
+              <div class="text-[11px] text-sub truncate">${tr.artist} • ${formatTime(tr.duration)}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button
+              onclick="event.stopPropagation(); sendTrackCommandToBot('${tr.artist} - ${tr.title}')"
+              class="px-2.5 py-1 rounded-xl app-input text-[10px] font-bold text-sub hover:text-main"
+              title="Отправить MP3 в чат"
+            >
+              📤
+            </button>
+            <button
+              onclick="event.stopPropagation(); toggleLikeById('${tr.id}')"
+              class="w-8 h-8 rounded-full flex items-center justify-center text-rose-500 hover:scale-110 transition text-base"
+              title="Убрать из понравившихся"
+            >
+              ❤️
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function setArtistTabFilter(mode) {
+      state.artistTabFilter = mode;
+      const allBtn = document.getElementById('artFilter-all');
+      const likedBtn = document.getElementById('artFilter-liked');
+      if (mode === 'liked') {
+        likedBtn.className = "px-4 py-2 rounded-full text-xs font-bold bg-[#3b66ff] text-white transition";
+        allBtn.className = "px-4 py-2 rounded-full text-xs font-semibold app-card text-sub hover:text-main transition";
+      } else {
+        allBtn.className = "px-4 py-2 rounded-full text-xs font-bold bg-[#3b66ff] text-white transition";
+        likedBtn.className = "px-4 py-2 rounded-full text-xs font-semibold app-card text-sub hover:text-main transition";
+      }
+      renderArtistsTab();
+    }
+
+    function toggleLikeArtist(artistId) {
+      const art = ARTISTS_CATALOG.find(a => a.id === artistId);
+      if (!art) return;
+      art.liked = !art.liked;
+      renderArtistsTab();
+      showToast(
+        art.liked ? `Исполнитель ${art.name} добавлен в Любимые ❤️` : `${art.name} убран из Любимых`,
+        art.liked ? "🎤" : "💔"
+      );
+    }
+
+    function addCustomArtistToCatalog() {
+      const inp = document.getElementById('newArtistNameInput');
+      const name = inp.value.trim();
+      if (!name) {
+        showToast("Введи имя артиста!", "⚠️");
+        return;
+      }
+      const newArt = {
+        id: `art_${Date.now()}`,
+        name: name,
+        genre: "Любимый артист",
+        liked: true,
+        cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80"
+      };
+      ARTISTS_CATALOG.unshift(newArt);
+      inp.value = '';
+      renderArtistsTab();
+      renderPlaylistsTab();
+      showToast(`Артист ${name} добавлен и отмечен ❤️!`, "🎤");
+    }
+
+    function renderArtistsTab() {
+      const likedCount = ARTISTS_CATALOG.filter(a => a.liked).length;
+      document.getElementById('likedArtistsCountBadge').textContent = `❤️ Любимых: ${likedCount}`;
+
+      const list = state.artistTabFilter === 'liked'
+        ? ARTISTS_CATALOG.filter(a => a.liked)
+        : ARTISTS_CATALOG;
+
+      const grid = document.getElementById('artistsCatalogGrid');
+      if (list.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-2 app-card rounded-3xl p-8 text-center">
+            <p class="text-xs font-bold text-main">У тебя пока нет лайкнутых артистов</p>
+            <p class="text-[11px] text-sub mt-1">Нажми на сердечко на карточке любого исполнителя</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = list.map(art => {
+        const trackCount = TRACK_DATABASE.filter(t => t.artist.toLowerCase().includes(art.name.toLowerCase())).length || 15;
+        return `
+          <div class="app-card rounded-3xl p-3 flex flex-col justify-between relative group">
+            <div class="relative aspect-square rounded-2xl overflow-hidden mb-2.5">
+              <img src="${art.cover}" alt="${art.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+              <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+              <!-- Кнопка Лайка артиста -->
+              <button
+                onclick="toggleLikeArtist('${art.id}')"
+                class="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/55 backdrop-blur-md flex items-center justify-center text-sm hover:scale-110 active:scale-90 transition"
+                title="Лайкнуть исполнителя"
+              >
+                ${art.liked ? '❤️' : '🤍'}
+              </button>
+              <div class="absolute bottom-2 left-2.5 right-2.5">
+                <div class="text-xs font-extrabold text-white truncate">${art.name}</div>
+                <div class="text-[10px] text-zinc-300 truncate">${art.genre}</div>
+              </div>
+            </div>
+
+            <button
+              onclick="startSoloArtistById('${art.id}')"
+              class="w-full py-2 rounded-xl bg-[#3b66ff] text-white text-[11px] font-extrabold hover:bg-blue-600 active:scale-95 transition flex items-center justify-center gap-1"
+            >
+              <span>▶️ Чисто его треки (${trackCount})</span>
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // =====================================================================
+    // 7. ПЕРЕНОС С ЯНДЕКС МУЗЫКИ, SPOTIFY И VK (ПОДПИСАННЫЕ ПЛЕЙЛИСТЫ) + РОВНЫЙ МИКС
+    // =====================================================================
+
+    function selectImportPlatform(platform) {
+      state.selectedImportPlatform = platform;
+      const configs = {
+        yandex: { activeClass: "bg-amber-500/15 border-amber-500 text-amber-400", label: "2. Ссылка на плейлист Яндекс Музыки или OAuth-токен:" },
+        spotify: { activeClass: "bg-emerald-500/15 border-emerald-500 text-emerald-400", label: "2. Ссылка на плейлист Spotify (open.spotify.com/playlist/...):" },
+        vk: { activeClass: "bg-blue-500/15 border-blue-500 text-blue-400", label: "2. Ссылка на аудиозаписи VK Музыки или ID профиля:" }
+      };
+
+      ['yandex', 'spotify', 'vk'].forEach(p => {
+        const btn = document.getElementById(`impSource-${p}`);
+        if (p === platform) {
+          btn.className = `p-2.5 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1 transition ${configs[p].activeClass}`;
+        } else {
+          btn.className = "p-2.5 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1 transition app-input text-sub";
+        }
+      });
+
+      document.getElementById('importSourceLinkLabel').textContent = configs[platform].label;
+    }
+
+    function createImportedPlaylist() {
+      const titleInput = document.getElementById('importCustomTitleInput');
+      const dataInput = document.getElementById('importSourceDataInput');
+
+      const badgeMap = {
+        yandex: "🟡 Яндекс Музыка",
+        spotify: "🟢 Spotify",
+        vk: "🔵 VK Музыка"
+      };
+      const defaultTitleMap = {
+        yandex: "Мой перенос из Яндекс Музыки",
+        spotify: "Мой плейлист из Spotify",
+        vk: "Моя музыка из ВКонтакте"
+      };
+
+      const customTitle = titleInput.value.trim() || defaultTitleMap[state.selectedImportPlatform];
+      const rawSource = dataInput.value.trim();
+
+      // Формируем треклист для перенесённого плейлиста
+      let tracksForPlaylist = [];
+      if (rawSource && rawSource.includes(',')) {
+        const parts = rawSource.split(',').map(s => s.trim()).filter(Boolean);
+        parts.forEach((p, idx) => {
+          tracksForPlaylist.push({
+            id: `imp_custom_${Date.now()}_${idx}`,
+            artist: p.includes('-') ? p.split('-')[0].trim() : p,
+            title: p.includes('-') ? p.split('-')[1].trim() : `Импортированный хит #${idx + 1}`,
+            album: customTitle,
+            duration: 185,
+            source: badgeMap[state.selectedImportPlatform].split(' ')[0],
+            liked: true,
+            freq: 220,
+            cover: TRACK_DATABASE[idx % TRACK_DATABASE.length].cover
+          });
+        });
+      } else {
+        tracksForPlaylist = [...TRACK_DATABASE].sort(() => Math.random() - 0.5).slice(0, 8);
+      }
+
+      const newPl = {
+        id: `pl_${Date.now()}`,
+        platform: state.selectedImportPlatform,
+        badge: badgeMap[state.selectedImportPlatform],
+        title: customTitle,
+        tracks: tracksForPlaylist
+      };
+
+      state.importedPlaylists.unshift(newPl);
+      titleInput.value = '';
+      dataInput.value = '';
+      renderPlaylistsTab();
+      showToast(`Создан плейлист «${customTitle}» (${tracksForPlaylist.length} треков)!`, "📥");
+    }
+
+    function playImportedPlaylist(plId) {
+      const pl = state.importedPlaylists.find(p => p.id === plId);
+      if (!pl) return;
+      state.queue = [...pl.tracks];
+      state.currentIndex = 0;
+      state.currentTime = 0;
+      state.isPlaying = true;
+      state.isInfiniteWave = false;
+      updateWaveCountersUI();
+      updateAllPlayerUI();
+      openPlayerModal('album');
+      showToast(`Играет твой плейлист: «${pl.title}»`, "▶️");
+    }
+
+    function renameImportedPlaylist(plId) {
+      const pl = state.importedPlaylists.find(p => p.id === plId);
+      if (!pl) return;
+      const titleInput = document.getElementById('importCustomTitleInput');
+      if (titleInput.value.trim()) {
+        pl.title = titleInput.value.trim();
+        titleInput.value = '';
+        renderPlaylistsTab();
+        showToast(`Плейлист переименован в «${pl.title}»`, "✏️");
+      } else {
+        titleInput.value = pl.title;
+        titleInput.focus();
+        showToast("Введи новое имя в поле «1. Как подписать» сверху и нажми ✏️ ещё раз", "✏️");
+      }
+    }
+
+    function deleteImportedPlaylist(plId) {
+      state.importedPlaylists = state.importedPlaylists.filter(p => p.id !== plId);
+      renderPlaylistsTab();
+      showToast("Плейлист удалён", "🗑");
+    }
+
+    function renderPlaylistsTab() {
+      // 1. Рендер перенесённых подписанных плейлистов
+      document.getElementById('importedPlaylistsCount').textContent = `${state.importedPlaylists.length} шт.`;
+      const plBox = document.getElementById('importedPlaylistsContainer');
+
+      plBox.innerHTML = state.importedPlaylists.map(pl => `
+        <div
+          onclick="playImportedPlaylist('${pl.id}')"
+          class="app-input rounded-2xl p-3 flex items-center justify-between gap-3 cursor-pointer hover:border-blue-500 transition"
+        >
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400">${pl.badge}</span>
+              <span class="text-[10px] text-sub font-semibold">${pl.tracks.length} треков</span>
+            </div>
+            <div class="text-xs font-extrabold text-main truncate mt-1">${pl.title}</div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button
+              onclick="event.stopPropagation(); renameImportedPlaylist('${pl.id}')"
+              class="w-7 h-7 rounded-xl app-card flex items-center justify-center text-xs"
+              title="Переименовать"
+            >
+              ✏️
+            </button>
+            <button
+              onclick="event.stopPropagation(); deleteImportedPlaylist('${pl.id}')"
+              class="w-7 h-7 rounded-xl app-card flex items-center justify-center text-xs text-rose-400"
+              title="Удалить"
+            >
+              ✕
+            </button>
+            <div class="w-8 h-8 rounded-xl bg-[#3b66ff] text-white flex items-center justify-center text-xs font-bold">
+              ▶
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // 2. Рендер ровной сетки выбора артистов для микса (2 колонки, без разброса)
+      document.getElementById('mixSelectedCounterBadge').textContent = `Выбрано: ${state.selectedMixArtists.size}`;
+      const grid = document.getElementById('multiArtistSelectorGrid');
+      grid.innerHTML = ARTISTS_CATALOG.map(art => {
+        const selected = state.selectedMixArtists.has(art.name);
+        return `
+          <button
+            onclick="toggleMixArtistById('${art.id}')"
+            class="p-2 rounded-2xl border flex items-center gap-2.5 text-left transition ${
+              selected
+                ? 'bg-purple-600/20 border-purple-500 text-main shadow-sm'
+                : 'app-input text-sub hover:text-main'
+            }"
+          >
+            <img src="${art.cover}" class="w-8 h-8 rounded-xl object-cover shrink-0" />
+            <div class="min-w-0 flex-1">
+              <div class="text-xs font-extrabold truncate text-main">${art.name}</div>
+              <div class="text-[10px] text-sub truncate">${selected ? '✓ В миксе' : 'Нажми для выбора'}</div>
+            </div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function toggleMixArtistById(artistId) {
+      const art = ARTISTS_CATALOG.find(a => a.id === artistId);
+      if (!art) return;
+      toggleMixArtistSelection(art.name);
+    }
+
+    function toggleMixArtistSelection(artName) {
+      if (state.selectedMixArtists.has(artName)) {
+        state.selectedMixArtists.delete(artName);
+      } else {
+        state.selectedMixArtists.add(artName);
+      }
+      renderPlaylistsTab();
+    }
+
+    function buildMultiArtistMix() {
+      const chosen = Array.from(state.selectedMixArtists);
+      if (chosen.length === 0) {
+        showToast("Выбери хотя бы 1–2 артистов в сетке!", "⚠️");
+        return;
+      }
+
+      // Собираем треки по каждому артисту отдельно и чередуем их по кругу (Round-Robin), чтобы не было разброса!
+      const buckets = chosen.map(artName => {
+        const low = artName.toLowerCase();
+        const found = [...TRACK_DATABASE, ...WAVE_SIMILAR_POOL].filter(t => t.artist.toLowerCase().includes(low));
+        return found.length > 0 ? found : [{
+          id: `mix_${Date.now()}_${artName}`,
+          artist: artName,
+          title: `${artName} — Хит микса`,
+          album: "Artist Mix",
+          duration: 182,
+          source: "🎵 YTM",
+          liked: false,
+          freq: 220,
+          cover: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&auto=format&fit=crop&q=80"
+        }];
+      });
+
+      const balancedMix = [];
+      for (let round = 0; round < 5; round++) {
+        for (let b = 0; b < buckets.length; b++) {
+          const item = buckets[b][round % buckets[b].length];
+          if (item && balancedMix.length < 18) {
+            balancedMix.push({
+              ...item,
+              id: `${item.id}_r${round}_b${b}`
+            });
+          }
+        }
+      }
+
+      const customMixName = document.getElementById('mixCustomPlaylistName').value.trim();
+      if (customMixName) {
+        state.importedPlaylists.unshift({
+          id: `mix_saved_${Date.now()}`,
+          platform: "mix",
+          badge: "🎛 Авторский микс",
+          title: customMixName,
+          tracks: balancedMix
+        });
+        document.getElementById('mixCustomPlaylistName').value = '';
+        renderPlaylistsTab();
+      }
+
+      state.queue = balancedMix;
+      state.currentIndex = 0;
+      state.currentTime = 0;
+      state.isPlaying = true;
+      state.isInfiniteWave = false;
+      updateWaveCountersUI();
+      updateAllPlayerUI();
+      openPlayerModal('album');
+      showToast(`Собран ровный микс (${balancedMix.length} треков): ${chosen.join(', ')}`, "🎛");
+    }
+
+    // =====================================================================
+    // 8. ПОИСК, HOME-ВКЛАДКА И ПЛЕЕР
+    // =====================================================================
+
+    function renderHomeTab() {
+      // 1. Недавно слушали (2x2)
+      const recentGrid = document.getElementById('recentlyPlayedGrid');
+      recentGrid.innerHTML = state.queue.slice(0, 4).map(tr => `
+        <div
+          onclick="playTrackById('${tr.id}')"
+          class="app-card rounded-2xl p-2 flex items-center gap-2.5 cursor-pointer hover:scale-[1.02] active:scale-95 transition"
+        >
+          <img src="${tr.cover}" class="w-11 h-11 rounded-xl object-cover shrink-0" />
+          <div class="min-w-0 flex-1">
+            <div class="text-[10px] font-medium text-sub truncate">${tr.artist}</div>
+            <div class="text-xs font-extrabold text-main truncate">${tr.title}</div>
+          </div>
+        </div>
+      `).join('');
+
+      // 2. Быстрый старт (3 карточки)
+      const trendingBox = document.getElementById('trendingHorizontal');
+      const cards = [
+        { title: "Чисто FACE", sub: "15 треков артиста", img: TRACK_DATABASE[0].cover, act: "startSoloArtist('FACE')" },
+        { title: "❤️ Лайкнутые", sub: "Твоя коллекция", img: TRACK_DATABASE[10].cover, act: "switchTab('likes')" },
+        { title: "🎤 Артисты", sub: "Любимые звёзды", img: TRACK_DATABASE[4].cover, act: "switchTab('artists')" }
+      ];
+      trendingBox.innerHTML = cards.map(c => `
+        <div onclick="${c.act}" class="cursor-pointer group">
+          <div class="relative aspect-[4/4.5] rounded-2xl overflow-hidden mb-1.5 shadow-md">
+            <img src="${c.img}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="w-9 h-9 rounded-full bg-white/90 text-slate-900 flex items-center justify-center shadow-lg">
+                ▶
+              </div>
+            </div>
+          </div>
+          <div class="text-xs font-extrabold text-main truncate">${c.title}</div>
+          <div class="text-[10px] text-sub truncate">${c.sub}</div>
+        </div>
+      `).join('');
+
+      // 3. Топ недели
+      const weekBox = document.getElementById('songsOfWeekList');
+      const cur = state.queue[state.currentIndex] || TRACK_DATABASE[0];
+      const pct = Math.min(100, Math.round((state.currentTime / (cur.duration || 180)) * 100));
+
+      let html = `
+        <div onclick="openPlayerModal('player')" class="app-card rounded-2xl p-3 cursor-pointer">
+          <div class="flex items-center justify-between gap-3 mb-2">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <img src="${cur.cover}" class="w-10 h-10 rounded-xl object-cover shrink-0" />
+              <div class="min-w-0">
+                <div class="text-[11px] text-sub truncate">${cur.artist}</div>
+                <div class="text-xs font-extrabold text-blue-500 truncate">${cur.title}</div>
+              </div>
+            </div>
+            <button onclick="event.stopPropagation(); togglePlayPause()" class="w-8 h-8 rounded-full app-input flex items-center justify-center text-xs font-bold">
+              ${state.isPlaying ? '⏸' : '▶'}
+            </button>
+          </div>
+          <div class="flex items-center gap-2 text-[10px] font-semibold text-sub tabular-nums">
+            <span>${formatTimePadded(state.currentTime)}</span>
+            <div class="flex-1 h-1.5 bg-slate-500/20 rounded-full overflow-hidden">
+              <div class="h-full bg-[#3b66ff] rounded-full" style="width: ${pct}%"></div>
+            </div>
+            <span>${formatTimePadded(cur.duration)}</span>
+          </div>
+        </div>
+      `;
+
+      html += TRACK_DATABASE.slice(1, 4).map(tr => `
+        <div onclick="playTrackById('${tr.id}')" class="app-card rounded-2xl p-2.5 flex items-center justify-between gap-3 cursor-pointer">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <img src="${tr.cover}" class="w-10 h-10 rounded-xl object-cover shrink-0" />
+            <div class="min-w-0">
+              <div class="text-[11px] text-sub truncate">${tr.artist}</div>
+              <div class="text-xs font-extrabold text-main truncate">${tr.title}</div>
+            </div>
+          </div>
+          <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-400 shrink-0">${tr.growth}</span>
+        </div>
+      `).join('');
+
+      weekBox.innerHTML = html;
+    }
+
+    function setSearchFilter(mode) {
+      state.searchFilter = mode;
+      ['tracks', 'web57', 'artist_strict', 'albums'].forEach(m => {
+        const btn = document.getElementById(`sFilter-${m}`);
+        if (m === mode) {
+          btn.className = "search-pill px-4 py-2 rounded-full text-xs font-bold bg-[#3b66ff] text-white transition shrink-0";
+        } else {
+          btn.className = "search-pill px-4 py-2 rounded-full text-xs font-semibold app-card text-sub hover:text-main transition shrink-0";
+        }
+      });
+      handleSearchInput(document.getElementById('searchInput').value);
+    }
+
+    function quickSearch(q) {
+      const inp = document.getElementById('searchInput');
+      inp.value = q;
+      if (q.toUpperCase() === 'FACE') setSearchFilter('artist_strict');
+      handleSearchInput(q);
+    }
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      handleSearchInput('');
+    }
+
+    function handleSearchInput(rawQ) {
+      const q = (rawQ || '').trim();
+      const clearBtn = document.getElementById('clearSearchBtn');
+      const liveSec = document.getElementById('liveSearchResultsSection');
+      const box = document.getElementById('searchResultsContainer');
+
+      if (!q) {
+        clearBtn.classList.add('hidden');
+        liveSec.classList.add('hidden');
+        return;
+      }
+      clearBtn.classList.remove('hidden');
+      liveSec.classList.remove('hidden');
+
+      const qLow = q.toLowerCase();
+      let res = state.searchFilter === 'artist_strict'
+        ? TRACK_DATABASE.filter(t => t.artist.toLowerCase().includes(qLow))
+        : TRACK_DATABASE.filter(t => t.artist.toLowerCase().includes(qLow) || t.title.toLowerCase().includes(qLow));
+
+      if (res.length === 0) {
+        res = [
+          { id: `net_1_${Date.now()}`, artist: q, title: `${q} (Original Audio)`, album: "YouTube Music", duration: 174, source: "🎵 YTM", liked: false, freq: 220, cover: TRACK_DATABASE[0].cover },
+          { id: `net_2_${Date.now()}`, artist: q, title: `${q} (Sped Up / Nightcore)`, album: "SoundCloud", duration: 138, source: "☁️ SC", liked: false, freq: 277, cover: TRACK_DATABASE[12].cover },
+          { id: `net_3_${Date.now()}`, artist: q, title: `${q} (Hardtekk / Phonk Remix)`, album: "YouTube Global", duration: 152, source: "▶️ YT", liked: false, freq: 196, cover: TRACK_DATABASE[4].cover },
+          { id: `net_4_${Date.now()}`, artist: q, title: `${q} (Slowed + Reverb)`, album: "SoundCloud", duration: 204, source: "☁️ SC", liked: false, freq: 174, cover: TRACK_DATABASE[10].cover },
+          { id: `net_5_${Date.now()}`, artist: q, title: `${q} (Live Version)`, album: "YouTube", duration: 215, source: "▶️ YT", liked: false, freq: 246, cover: TRACK_DATABASE[6].cover }
+        ];
+      }
+
+      state.lastSearchResults = res.slice(0, 7);
+
+      box.innerHTML = state.lastSearchResults.map((tr, i) => `
+        <div
+          onclick="playSearchResultByIndex(${i})"
+          class="app-card rounded-2xl p-2.5 flex items-center justify-between gap-3 cursor-pointer"
+        >
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="text-xs font-bold text-sub w-4 text-center">${i + 1}</span>
+            <img src="${tr.cover}" class="w-11 h-11 rounded-xl object-cover shrink-0" />
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400">${tr.source}</span>
+                <span class="text-xs font-extrabold text-main truncate">${tr.title}</span>
+              </div>
+              <div class="text-[11px] text-sub truncate mt-0.5">${tr.artist} • ${formatTime(tr.duration)}</div>
+            </div>
+          </div>
+          <button
+            onclick="event.stopPropagation(); toggleLikeById('${tr.id}')"
+            class="w-8 h-8 rounded-full flex items-center justify-center text-sm"
+          >
+            ${tr.liked ? '❤️' : '🤍'}
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function playSearchResultByIndex(idx) {
+      const tr = state.lastSearchResults && state.lastSearchResults[idx];
+      if (!tr) return;
+      playOrQueueDynamicTrack(tr);
+    }
+
+    function renderUserCollectionInSearch() {
+      const liked = TRACK_DATABASE.filter(t => t.liked);
+      document.getElementById('collectionCountLabel').textContent = `Треков: ${liked.length}`;
+      const box = document.getElementById('userCollectionContainer');
+      box.innerHTML = liked.map(tr => `
+        <div onclick="playTrackById('${tr.id}')" class="app-card rounded-2xl p-2.5 flex items-center justify-between gap-3 cursor-pointer">
+          <div class="flex items-center gap-3 min-w-0">
+            <img src="${tr.cover}" class="w-10 h-10 rounded-xl object-cover shrink-0" />
+            <div class="min-w-0">
+              <div class="text-xs font-extrabold text-main truncate">${tr.title}</div>
+              <div class="text-[11px] text-sub truncate">${tr.artist}</div>
+            </div>
+          </div>
+          <button onclick="event.stopPropagation(); toggleLikeById('${tr.id}')" class="text-rose-500 text-sm px-2">❤️</button>
+        </div>
+      `).join('');
+    }
+
+    // =====================================================================
+    // 9. АУДИО-ДВИЖОК, УПРАВЛЕНИЕ ОЧЕРЕДЬЮ И НАВИГАЦИЯ
+    // =====================================================================
+
+    let audioCtx = null;
+    function triggerSynthChord() {
+      if (!state.isPlaying) return;
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AudioContextClass();
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const track = state.queue[state.currentIndex] || TRACK_DATABASE[0];
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        const mult = [1, 1.25, 1.5, 0.75][Math.floor(Math.random() * 4)];
+        osc.frequency.setValueAtTime((track.freq || 220) * mult, now);
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.exponentialRampToValueAtTime(0.03, now + 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.85);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.9);
+      } catch (e) {}
+    }
+
+    function updateAllPlayerUI() {
+      const track = state.queue[state.currentIndex] || TRACK_DATABASE[0];
+      const dur = track.duration || 180;
+      const cur = Math.min(dur, state.currentTime);
+      const ratio = cur / dur;
+
+      // Контур прогресса вокруг обложки (Фото 1)
+      const totalPerim = 760;
+      const rectEl = document.getElementById('perimeterProgressRect');
+      if (rectEl) rectEl.setAttribute('stroke-dashoffset', (totalPerim - totalPerim * ratio).toFixed(1));
+
+      document.getElementById('perimeterTimeLabel').textContent = formatTimePadded(cur);
+      document.getElementById('playerCoverImg').src = track.cover;
+      document.getElementById('playerTrackTitle').textContent = track.title;
+      document.getElementById('playerTrackArtist').textContent = `${track.artist} • ${track.album}`;
+      document.getElementById('playerCurrentTime').textContent = formatTime(cur);
+      document.getElementById('playerRemainingTime').textContent = `-${formatTime(dur - cur)}`;
+
+      // Иконка внутри центральной сферы Моей Волны
+      const orbIcon = document.getElementById('waveOrbPlayIcon');
+      const heroBox = document.getElementById('waveHeroBox');
+      if (state.isPlaying) {
+        orbIcon.innerHTML = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />`;
+        orbIcon.classList.remove('translate-x-0.5');
+        heroBox.classList.add('wave-playing');
+      } else {
+        orbIcon.innerHTML = `<path d="M8 5v14l11-7z" />`;
+        orbIcon.classList.add('translate-x-0.5');
+        heroBox.classList.remove('wave-playing');
+      }
+
+      document.getElementById('waveCurrentTrackSub').textContent =
+        `Сейчас в эфире: ${track.artist} — ${track.title}`;
+
+      // Карточка Next up
+      const nextItem = state.queue[(state.currentIndex + 1) % state.queue.length] || TRACK_DATABASE[0];
+      document.getElementById('nextUpCard').innerHTML = `
+        <div class="flex items-center gap-3 min-w-0">
+          <img src="${nextItem.cover}" class="w-10 h-10 rounded-xl object-cover shrink-0" />
+          <div class="min-w-0">
+            <div class="text-[11px] text-sub truncate">${nextItem.artist}</div>
+            <div class="text-xs font-extrabold text-main truncate">${nextItem.title}</div>
+          </div>
+        </div>
+        <span class="text-xs font-bold text-blue-500 px-2">▶</span>
+      `;
+
+      // Экран Альбома / Очереди (Фото 2 справа)
+      document.getElementById('albumHeaderTitle').textContent = `${track.artist} • ${track.album}`;
+      document.getElementById('albumViewCoverImg').src = track.cover;
+      document.getElementById('albumMiniCover').src = track.cover;
+      document.getElementById('albumMiniTitle').textContent = track.title;
+      document.getElementById('albumMiniArtist').textContent = track.artist;
+      document.getElementById('albumMiniPlayIcon').textContent = state.isPlaying ? '⏸' : '▶';
+
+      const albumList = document.getElementById('albumTracklistContainer');
+      albumList.innerHTML = state.queue.map((item, idx) => {
+        const isCur = idx === state.currentIndex;
+        return `
+          <div
+            onclick="selectQueueIndex(${idx})"
+            class="px-3.5 py-2.5 flex items-center justify-between gap-3 cursor-pointer transition ${
+              isCur ? 'neumorph-track-active text-main' : 'text-sub hover:text-main'
+            }"
+          >
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="text-xs font-extrabold w-5 text-center ${isCur ? 'text-blue-500' : 'text-sub'}">${idx + 1}</span>
+              <div class="min-w-0">
+                <div class="text-xs font-bold truncate text-main">${item.title}</div>
+                <div class="text-[11px] text-sub truncate">${item.artist}</div>
+              </div>
+            </div>
+            <span class="text-[10px] text-sub tabular-nums">${formatTime(item.duration || 180)}</span>
+          </div>
+        `;
+      }).join('');
+
+      // Нижний мини-плеер
+      document.getElementById('miniPlayerCover').src = track.cover;
+      document.getElementById('miniPlayerTitle').textContent = track.title;
+      document.getElementById('miniPlayerArtist').textContent = `${track.artist} • ${formatTime(cur)} / ${formatTime(dur)}`;
+      document.getElementById('miniLikeBtn').textContent = track.liked ? '❤️' : '🤍';
+
+      const miniSvg = document.getElementById('miniPlaySvg');
+      const eqOverlay = document.getElementById('miniEqOverlay');
+      if (state.isPlaying) {
+        miniSvg.innerHTML = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />`;
+        miniSvg.classList.remove('translate-x-0.5');
+        eqOverlay.classList.remove('hidden');
+        eqOverlay.classList.add('flex');
+      } else {
+        miniSvg.innerHTML = `<path d="M8 5v14l11-7z" />`;
+        miniSvg.classList.add('translate-x-0.5');
+        eqOverlay.classList.add('hidden');
+        eqOverlay.classList.remove('flex');
+      }
+
+      updateWaveCountersUI();
+      renderHomeTab();
+    }
+
+    function playTrackById(id) {
+      const idx = state.queue.findIndex(t => t.id === id);
+      if (idx !== -1) {
+        state.currentIndex = idx;
+      } else {
+        const found = TRACK_DATABASE.find(t => t.id === id);
+        if (found) {
+          state.queue.unshift(found);
+          state.currentIndex = 0;
+        }
+      }
+      state.currentTime = 0;
+      state.isPlaying = true;
+      checkAndReplenishInfiniteWave();
+      triggerSynthChord();
+      updateAllPlayerUI();
+    }
+
+    function playOrQueueDynamicTrack(tr) {
+      TRACK_DATABASE.unshift(tr);
+      state.queue.unshift(tr);
+      state.currentIndex = 0;
+      state.currentTime = 0;
+      state.isPlaying = true;
+      triggerSynthChord();
+      updateAllPlayerUI();
+      showToast(`Включен: ${tr.artist} — ${tr.title}`, "▶️");
+    }
+
+    function selectQueueIndex(idx) {
+      state.currentIndex = idx;
+      state.currentTime = 0;
+      state.isPlaying = true;
+      checkAndReplenishInfiniteWave();
+      triggerSynthChord();
+      updateAllPlayerUI();
+    }
+
+    function togglePlayPause() {
+      state.isPlaying = !state.isPlaying;
+      if (state.isPlaying) triggerSynthChord();
+      updateAllPlayerUI();
+    }
+
+    function toggleWavePlayback() {
+      state.isInfiniteWave = true;
+      togglePlayPause();
+    }
+    window.toggleWavePlayback = toggleWavePlayback;
+    window.togglePlayPause = togglePlayPause;
+
+    function nextTrack() {
+      state.currentIndex = (state.currentIndex + 1) % state.queue.length;
+      state.currentTime = 0;
+      state.isPlaying = true;
+      checkAndReplenishInfiniteWave();
+      triggerSynthChord();
+      updateAllPlayerUI();
+    }
+
+    function prevTrack() {
+      state.currentIndex = (state.currentIndex - 1 + state.queue.length) % state.queue.length;
+      state.currentTime = 0;
+      state.isPlaying = true;
+      triggerSynthChord();
+      updateAllPlayerUI();
+    }
+
+    function toggleShuffleQueue() {
+      state.queue = [...state.queue].sort(() => Math.random() - 0.5);
+      state.currentIndex = 0;
+      state.currentTime = 0;
+      updateAllPlayerUI();
+      showToast("Очередь перемешана!", "🔀");
+    }
+
+    function toggleLikeCurrentTrack() {
+      const cur = state.queue[state.currentIndex];
+      if (!cur) return;
+      cur.liked = !cur.liked;
+      const dbMatch = TRACK_DATABASE.find(t => t.id === cur.id);
+      if (dbMatch) dbMatch.liked = cur.liked;
+      renderLikesTab();
+      renderUserCollectionInSearch();
+      updateAllPlayerUI();
+      showToast(cur.liked ? `Добавлено в «❤️ Лайки»: ${cur.title}` : "Убрано из «❤️ Лайков»", cur.liked ? "❤️" : "💔");
+    }
+
+    function toggleLikeById(id) {
+      const tr = TRACK_DATABASE.find(t => t.id === id);
+      if (tr) tr.liked = !tr.liked;
+      state.queue.forEach(q => { if (q.id === id) q.liked = tr ? tr.liked : !q.liked; });
+      renderLikesTab();
+      renderUserCollectionInSearch();
+      updateAllPlayerUI();
+    }
+
+    function startMyWave(vibe) {
+      state.currentVibe = vibe;
+      state.isInfiniteWave = true;
+      ['likes', 'energetic', 'chill', 'fresh'].forEach(v => {
+        const btn = document.getElementById(`vibeChip-${v}`);
+        if (v === vibe) {
+          btn.className = "vibe-chip px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#3b66ff] text-white shadow-md transition";
+        } else {
+          btn.className = "vibe-chip px-3.5 py-1.5 rounded-full text-xs font-semibold app-card text-main hover:border-blue-500 transition";
+        }
+      });
+
+      const titles = {
+        likes: "🌊 Поток по твоим лайкам",
+        energetic: "🔥 Моя волна: Бодрый кач",
+        chill: "🌙 Моя волна: Ночной дрифт",
+        fresh: "🆕 Моя волна: Свежий фреш"
+      };
+      document.getElementById('waveCurrentVibeTitle').textContent = titles[vibe];
+
+      let base = vibe === 'likes'
+        ? TRACK_DATABASE.filter(t => t.liked)
+        : TRACK_DATABASE.filter(t => t.vibe === vibe);
+      if (base.length < 5) base = [...TRACK_DATABASE];
+
+      state.queue = [...base];
+      state.currentIndex = 0;
+      state.currentTime = 0;
+      state.isPlaying = true;
+      checkAndReplenishInfiniteWave();
+      triggerSynthChord();
+      updateAllPlayerUI();
+      showToast(`${titles[vibe]} запущена!`, "🌊");
+    }
+
+    function startLikedPlaylist(shuffle = false) {
+      let liked = TRACK_DATABASE.filter(t => t.liked);
+      if (liked.length === 0) liked = [...TRACK_DATABASE];
+      if (shuffle) liked = [...liked].sort(() => Math.random() - 0.5);
+      state.queue = liked;
+      state.currentIndex = 0;
+      state.currentTime = 0;
+      state.isPlaying = true;
+      state.isInfiniteWave = false;
+      updateAllPlayerUI();
+      openPlayerModal('album');
+      showToast(shuffle ? "Лайкнутые треки запущены вперемешку!" : "Включен плейлист «❤️ Понравившиеся»", "❤️");
+    }
+
+    function startSoloArtistById(artistId) {
+      const art = ARTISTS_CATALOG.find(a => a.id === artistId);
+      if (!art) return;
+      startSoloArtist(art.name);
+    }
+
+    function startSoloArtist(artistName) {
+      const low = artistName.toLowerCase();
+      let tracks = [...TRACK_DATABASE, ...WAVE_SIMILAR_POOL].filter(t => t.artist.toLowerCase().includes(low));
+      if (tracks.length < 6) {
+        for (let i = 1; i <= 8; i++) {
+          tracks.push({
+            id: `solo_${Date.now()}_${i}`,
+            artist: artistName,
+            title: `${artistName} — Трек #${i}`,
+            album: `${artistName} Collection`,
+            duration: 165 + i * 5,
+            source: "🎵 YTM",
+            liked: i <= 2,
+            freq: 215,
+            cover: TRACK_DATABASE[0].cover
+          });
+        }
+      }
+      state.queue = tracks;
+      state.currentIndex = 0;
+      state.currentTime = 0;
+      state.isPlaying = true;
+      state.isInfiniteWave = false;
+      updateAllPlayerUI();
+      openPlayerModal('album');
+      showToast(`Включен сольник: строго треки ${artistName} (${tracks.length} шт.)`, "🎤");
+    }
+
+    function shuffleWeeklyTop() {
+      state.queue = [...TRACK_DATABASE].sort(() => Math.random() - 0.5);
+      state.currentIndex = 0;
+      state.currentTime = 0;
+      state.isPlaying = true;
+      updateAllPlayerUI();
+      showToast("Топ недели обновлён ИИ-куратором!", "🔥");
+    }
+
+    function openPlayerModal(view = 'player') {
+      const modal = document.getElementById('fullPlayerModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      switchModalView(view);
+      updateAllPlayerUI();
+    }
+
+    function closePlayerModal() {
+      const modal = document.getElementById('fullPlayerModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function switchModalView(view) {
+      const pView = document.getElementById('modalView-player');
+      const aView = document.getElementById('modalView-album');
+      const pBtn = document.getElementById('modalTabBtn-player');
+      const aBtn = document.getElementById('modalTabBtn-album');
+
+      if (view === 'album') {
+        pView.classList.add('hidden');
+        aView.classList.remove('hidden');
+        aView.classList.add('flex');
+        aBtn.className = "px-3.5 py-1 rounded-full text-[11px] font-extrabold tracking-wider uppercase bg-[#3b66ff] text-white shadow transition";
+        pBtn.className = "px-3.5 py-1 rounded-full text-[11px] font-extrabold tracking-wider uppercase text-sub hover:text-main transition";
+      } else {
+        aView.classList.add('hidden');
+        aView.classList.remove('flex');
+        pView.classList.remove('hidden');
+        pBtn.className = "px-3.5 py-1 rounded-full text-[11px] font-extrabold tracking-wider uppercase bg-[#3b66ff] text-white shadow transition";
+        aBtn.className = "px-3.5 py-1 rounded-full text-[11px] font-extrabold tracking-wider uppercase text-sub hover:text-main transition";
+      }
+    }
+
+    // Переключение вкладок БЕЗ сброса или смены темы!
+    function switchTab(tabName) {
+      if (tabName === 'admin' && !isUserAdmin(state.currentUserId)) {
+        showToast("Доступ к Админ-панели только для ID 1320156672 и назначенных админов!", "🔒");
+        return;
+      }
+      state.currentTab = tabName;
+      ['home', 'likes', 'search', 'artists', 'playlists', 'admin'].forEach(t => {
+        const page = document.getElementById(`tab-${t}`);
+        if (page) {
+          if (t === tabName) page.classList.remove('hidden');
+          else page.classList.add('hidden');
+        }
+      });
+      updateNavButtonsHighlight();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function updateNavButtonsHighlight() {
+      ['home', 'likes', 'search', 'artists', 'playlists', 'admin'].forEach(t => {
+        const btn = document.getElementById(`navBtn-${t}`);
+        if (!btn) return;
+        if (t === state.currentTab) {
+          btn.style.backgroundColor = 'var(--pill-active-bg)';
+          btn.style.color = 'var(--pill-active-text)';
+          btn.classList.add('font-extrabold', 'shadow-md');
+        } else {
+          btn.style.backgroundColor = 'transparent';
+          btn.style.color = 'var(--text-secondary)';
+          btn.classList.remove('font-extrabold', 'shadow-md');
+        }
+      });
+    }
+
+    function sendTrackCommandToBot(queryStr) {
+      if (tg && tg.sendData) {
+        try {
+          tg.sendData(JSON.stringify({ action: "play_or_download", query: queryStr }));
+        } catch (e) {}
+      }
+      showToast(`Отправлено в чат @littleMusic_crai_bot: «${queryStr}»`, "📤");
+    }
+
+    function sendCurrentTrackToBotChat() {
+      const tr = state.queue[state.currentIndex] || TRACK_DATABASE[0];
+      sendTrackCommandToBot(`${tr.artist} - ${tr.title}`);
+    }
+
+    function formatTime(sec) {
+      sec = Math.max(0, Math.floor(sec));
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function formatTimePadded(sec) {
+      sec = Math.max(0, Math.floor(sec));
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function showToast(text, icon = "🎧") {
+      const container = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      el.className = "app-card px-4 py-2.5 rounded-2xl shadow-2xl text-xs font-bold flex items-center gap-2 transition-all duration-300";
+      el.innerHTML = `<span>${icon}</span><span class="text-main">${text}</span>`;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(-8px)';
+        setTimeout(() => el.remove(), 260);
+      }, 2600);
+    }
+
+    // Таймер воспроизведения каждую секунду
+    setInterval(() => {
+      if (!state.isPlaying) return;
+      const track = state.queue[state.currentIndex] || TRACK_DATABASE[0];
+      state.currentTime += 1;
+      if (state.currentTime % 2 === 0) triggerSynthChord();
+      if (state.currentTime >= (track.duration || 180)) {
+        nextTrack();
+      } else {
+        updateAllPlayerUI();
+      }
+    }, 1000);
+
+    // Старт приложения
+    window.onload = function () {
+      applyGlobalTheme(state.theme);
+      loadSavedCustomAvatar();
+      syncAdminAccessUI();
+      renderHomeTab();
+      renderLikesTab();
+      renderUserCollectionInSearch();
+      renderArtistsTab();
+      renderPlaylistsTab();
+      renderAdminPanel();
+      updateAllPlayerUI();
+      requestAnimationFrame(animateVisualizersLoop);
+    };
+  </script>
+</body>
+</html>
